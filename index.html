@@ -518,7 +518,7 @@ const SB_KEY='sb_publishable_9uR8eFjF10ktFY8mb7YJoA_prsH7X4W';
 const sb=window.supabase.createClient(SB_URL,SB_KEY);
 
 /* ====== MERKEZİ YAPILANDIRMA (tüm metin/veri buradan düzenlenir) ====== */
-const USERS={aykut:"aelmas0798@gmail.com",hakan:"hkdmr67@gmail.com",ozge:"ozgeekucukkurt7@gmail.com",mustafa:"Mustafanai48@gmail.com",selin:"Selin.kocdemir9522@gmail.com"};
+const USERS={aykut:"aelmas0798@gmail.com",hakan:"hkdmr67@gmail.com",ozge:"ozgeekucukkurt7@gmail.com",mustafa:"mustafansi48@gmail.com",selin:"Selin.kocdemir9522@gmail.com"};
 const DISPLAY={aykut:"Aykut",hakan:"Hakan",ozge:"Özge",mustafa:"Mustafa",selin:"Selin"};
 const CONFIG={
   contacts:[{name:"Hakan",phone:"+90 553 573 73 67"},{name:"Cemal",phone:"+90 534 987 55 52"}],
@@ -573,7 +573,7 @@ async function verifyCode(){
 function emailToKey(email){email=(email||'').toLowerCase();for(const k in USERS){if(USERS[k].toLowerCase()===email)return k;}return null;}
 async function checkSession(){const {data}=await sb.auth.getSession();if(data&&data.session){const k=emailToKey(data.session.user.email);if(k){active=k;enterApp();}}}
 function enterApp(){document.getElementById('login').classList.add('hide');document.getElementById('app').classList.remove('hide');
-  document.getElementById('activeUser').textContent=DISPLAY[active];document.getElementById('hiName').textContent=DISPLAY[active];loadPrinters();loadSettings();startPresence();go('home');}
+  document.getElementById('activeUser').textContent=DISPLAY[active];document.getElementById('hiName').textContent=DISPLAY[active];loadPrinters();loadSettings();startPresence();try{if('Notification'in window&&Notification.permission==='default')Notification.requestPermission();}catch(e){}go('home');}
 async function logout(){clearInterval(cdTimer);stopPresence();await sb.auth.signOut();active=null;document.getElementById('app').classList.add('hide');document.getElementById('login').classList.remove('hide');backToName();document.getElementById('nameIn').value="";}
 
 /* ====== Nav (lazy: bölüm verisi sadece girince yüklenir) ====== */
@@ -733,6 +733,7 @@ async function renderPrinters(){
         <div>🏁 Son: <b>${last?(last.status==='recycled'?'♻️ ':'✅ ')+escapeHtml(last.product||'-'):'—'}</b></div>
       </div>
       <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
+        <button class="mini" onclick="startPrint(${p.id},'${escapeHtml(p.name).replace(/'/g,'')}')">▶️ Başlat</button>
         <button class="mini" onclick="cyclePrinter(${p.id})">Durum değiştir</button>
         <button class="mini" onclick="completeJobPrompt(${p.id},'${escapeHtml(p.name).replace(/'/g,'')}')">🏁 Baskı bitti</button>
         ${active?`<button class="mini" onclick="openStatusMsg('${escapeHtml(active.product||'').replace(/'/g,'')}','${escapeHtml(active.customer||'').replace(/'/g,'')}')">💬 Mesaj</button>`:''}
@@ -744,7 +745,8 @@ async function renderPrinters(){
   });
 }
 function fmtTime(s){if(s<=0)return"00:00:00";const h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=s%60;return [h,m,x].map(n=>String(n).padStart(2,'0')).join(":");}
-function tickPrinters(){PRINTERS.forEach(p=>{if(p.status==='printing'){p.left=p.ends_at?Math.max(0,Math.floor((new Date(p.ends_at).getTime()-Date.now())/1000)):0;const el=document.getElementById('cd'+p.id);if(el)el.textContent=fmtTime(p.left);if(p.left===0){p.status='ready';sb.from('printers').update({status:'ready',ends_at:null,updated_by:DISPLAY[active]}).eq('id',p.id);toast("🔔 "+p.name+" baskıyı bitirdi");renderPrinters();}}});}
+function tickPrinters(){PRINTERS.forEach(p=>{if(p.status==='printing'){p.left=p.ends_at?Math.max(0,Math.floor((new Date(p.ends_at).getTime()-Date.now())/1000)):0;const el=document.getElementById('cd'+p.id);if(el)el.textContent=fmtTime(p.left);if(p.left===0){p.status='ready';sb.from('printers').update({status:'ready',ends_at:null,updated_by:DISPLAY[active]}).eq('id',p.id);toast("🔔 "+p.name+" baskıyı bitirdi — onay bekliyor");notify("🔔 "+p.name+" baskıyı bitirdi","Başarılı mı, geri dönüşüm mü? Onayla.");renderPrinters();if(!document.getElementById('modalRoot').innerHTML)completeJobPrompt(p.id,p.name);}}});}
+function notify(title,body){try{if('Notification'in window&&Notification.permission==='granted')new Notification(title,{body});}catch(e){}}
 async function cyclePrinter(id){const p=PRINTERS.find(x=>x.id===id);if(!p)return;const order=['ready','printing','off'];const ns=order[(order.indexOf(p.status)+1)%3];
   const upd={status:ns,updated_by:DISPLAY[active]};upd.ends_at=ns==='printing'?new Date(Date.now()+3600*1000).toISOString():null;
   await sb.from('printers').update(upd).eq('id',id);renderPrinters();}
@@ -845,10 +847,12 @@ function addBasari(){popupCustom('ok','🎉','Teslim edilen ürün ekle',
    <label style="margin-top:8px">Adet fiyatı (₺)</label><input id="baP" type="number" value="0">
    <label style="margin-top:8px">Müşteri</label><input id="baT" placeholder="Müşteri/firma">
    <label style="margin-top:8px">Yazıcı</label><input id="baPr" placeholder="opsiyonel">
-   <label style="margin-top:8px">Foto linki (URL)</label><input id="baPh" placeholder="opsiyonel"></div>`,
+   <label style="margin-top:8px">📷 Fotoğraf (çek veya yükle)</label>
+   <input id="baPhoto" type="file" accept="image/*" capture="environment" onchange="onPhotoPick(this,'__baPhoto')">
+   <img id="phPreview" style="display:none;max-width:100%;border-radius:10px;margin-top:8px"></div>`,
   [{label:"💾 Kaydet",cls:"btn",fn:"saveBasari()"},{label:"Vazgeç",cls:"btn alt",fn:"closeModal()"}]);}
-async function saveBasari(){const row={name:document.getElementById('baN').value||'-',qty:+document.getElementById('baQ').value||0,mat:document.getElementById('baM').value||'-',price:+document.getElementById('baP').value||0,delivered_to:document.getElementById('baT').value||'-',printer:document.getElementById('baPr').value||null,photo_url:document.getElementById('baPh').value||null,created_by:DISPLAY[active]};
-  const {data,error}=await sb.from('basari').insert(row).select().maybeSingle();closeModal();if(error){toast("⚠️ Eklenemedi");return;}await logH('basari',data?data.id:null,'eklendi',row.name);renderBasari();toast("🎉 Eklendi");}
+async function saveBasari(){const row={name:document.getElementById('baN').value||'-',qty:+document.getElementById('baQ').value||0,mat:document.getElementById('baM').value||'-',price:+document.getElementById('baP').value||0,delivered_to:document.getElementById('baT').value||'-',printer:document.getElementById('baPr').value||null,photo_url:window.__baPhoto||null,created_by:DISPLAY[active]};
+  const {data,error}=await sb.from('basari').insert(row).select().maybeSingle();window.__baPhoto=null;closeModal();if(error){toast("⚠️ Eklenemedi");return;}await logH('basari',data?data.id:null,'eklendi',row.name);renderBasari();toast("🎉 Eklendi");}
 
 /* ====== Ayarlar / malzeme ====== */
 function renderMat(){const el=document.getElementById('matList');el.innerHTML="";
@@ -1176,7 +1180,7 @@ async function completeJobPrompt(printer_id,name){
   if(!job){popup('warn','!','Aktif baskı yok',`<b>${escapeHtml(name)}</b> için kayıtlı bir baskı işi bulunamadı. Önce Teklif → "Yazıcıya al" ile iş gönderebilirsin.`);return;}
   popupCustom('ok','🏁','Baskı tamamlandı',
    `<p>İş: <b>${escapeHtml(job.product||'-')}</b>${job.customer?' · '+escapeHtml(job.customer):''}</p><p style="font-size:13px;color:var(--txt2)">Sonuç nedir?</p>`,
-   [{label:"✅ Başarılı",cls:"btn",fn:`finishJob(${job.id},${printer_id},'ok')`},
+   [{label:"✅ Başarılı",cls:"btn",fn:`successForm(${job.id},${printer_id})`},
     {label:"♻️ Geri dönüşüm",cls:"btn alt",fn:`finishJob(${job.id},${printer_id},'rec')`},
     {label:"Vazgeç",cls:"btn alt",fn:"closeModal()"}]);
 }
@@ -1237,6 +1241,98 @@ async function doSendToPrinter(){
   await logH('job',job?job.id:null,'yazıcıya alındı',`${pr.name} · ${prod} · ${mat.name} · ${totalG}g`);
   closeModal();toast("🖨️ İş "+pr.name+" yazıcısına alındı, filament düşüldü");
   loadPrinters();
+}
+
+/* --- Manuel baskı başlat (süre/gram/adet/renk/marka/tür) --- */
+function startPrint(printer_id,name){
+  const matOpts=['PLA','PETG','ABS','TPU','ASA','Diğer'].map(m=>`<option>${m}</option>`).join('');
+  popupCustom('info','▶️','Baskı başlat · '+escapeHtml(name||''),
+   `<div style="text-align:left">
+     <label>Ürün</label><input id="spProd" placeholder="QR Menü Standı">
+     <label style="margin-top:6px">Müşteri</label><input id="spCust" placeholder="opsiyonel">
+     <label style="margin-top:6px">Filament türü</label><select id="spMat">${matOpts}</select>
+     <label style="margin-top:6px">Marka</label><input id="spBrand" placeholder="eSUN (opsiyonel)">
+     <label style="margin-top:6px">Renk</label><input id="spColor" placeholder="Siyah (opsiyonel)">
+     <div style="display:flex;gap:8px"><div style="flex:1"><label>Toplam filament (g)</label><input id="spGram" type="number" value="100"></div>
+       <div style="flex:1"><label>Adet</label><input id="spQty" type="number" value="1"></div></div>
+     <label style="margin-top:6px">Geri sayım süresi</label>
+     <div style="display:flex;gap:8px"><div style="flex:1"><input id="spH" type="number" value="2" placeholder="saat"><small style="color:var(--txt2)">saat</small></div>
+       <div style="flex:1"><input id="spM" type="number" value="0" placeholder="dakika"><small style="color:var(--txt2)">dakika</small></div></div>
+     <p style="font-size:11px;color:var(--txt2);margin:8px 0 0">Başlatınca geri sayım çalışır; eşleşen filament stoktan düşülür.</p>
+    </div>`,
+   [{label:"▶️ Başlat",cls:"btn",fn:`doStartPrint(${printer_id})`},{label:"Vazgeç",cls:"btn alt",fn:"closeModal()"}]);
+}
+async function doStartPrint(printer_id){
+  const prod=document.getElementById('spProd').value||"Baskı işi";
+  const cust=document.getElementById('spCust').value||"";
+  const matT=document.getElementById('spMat').value;
+  const brand=document.getElementById('spBrand').value||"";
+  const color=document.getElementById('spColor').value||"";
+  const gram=+document.getElementById('spGram').value||0;
+  const qty=Math.max(1,+document.getElementById('spQty').value||1);
+  const h=+document.getElementById('spH').value||0;const m=+document.getElementById('spM').value||0;
+  const ms=(h*3600+m*60)*1000;
+  if(ms<=0){toast("⚠️ Süre gir");return;}
+  const endsAt=new Date(Date.now()+ms).toISOString();
+  const matLabel=(matT+(color?' '+color:'')+(brand?' '+brand:'')).trim();
+  const {data:job}=await sb.from('print_jobs').insert({printer_id,product:prod,customer:cust,material:matLabel,grams:gram,hours:h+m/60,qty,status:'printing',started_at:new Date().toISOString(),ends_at:endsAt,created_by:DISPLAY[active]}).select().maybeSingle();
+  await sb.from('printers').update({status:'printing',ends_at:endsAt,updated_by:DISPLAY[active]}).eq('id',printer_id);
+  // eşleşen filamenti stoktan düş
+  let q=sb.from('stock').select('*').is('deleted_at',null).ilike('type',matT);
+  const {data:stkAll}=await q;
+  let pool=(stkAll||[]);
+  if(color)pool=pool.filter(s=>norm(s.color||'').includes(norm(color)))||pool;
+  if(!pool.length)pool=stkAll||[];
+  const target=pool.find(s=>Number(s.grams)>=gram)||pool[0];
+  if(target&&gram>0){
+    const newG=Math.max(0,Number(target.grams)-gram);
+    await sb.from('stock').update({grams:newG,updated_by:DISPLAY[active],updated_at:new Date().toISOString()}).eq('id',target.id);
+    await sb.from('stock_moves').insert({stock_id:target.id,delta:-gram,reason:'baskı: '+prod,who:DISPLAY[active]});
+    await logH('stock',target.id,'baskı çıkışı',`-${gram}g (${prod})`);
+  }
+  await logH('job',job?job.id:null,'başlatıldı',`${prod} · ${matLabel} · ${gram}g · ${h}s ${m}dk`);
+  closeModal();toast("▶️ Baskı başladı, geri sayım çalışıyor");
+  loadPrinters().then(renderPrinters);
+}
+
+/* --- Kamera/fotoğraf: küçült & sakla --- */
+function compressImage(file,cb){
+  const r=new FileReader();
+  r.onload=e=>{const img=new Image();img.onload=()=>{
+    const max=900;let w=img.width,h=img.height;
+    if(w>h&&w>max){h=Math.round(h*max/w);w=max;}else if(h>=w&&h>max){w=Math.round(w*max/h);h=max;}
+    const c=document.createElement('canvas');c.width=w;c.height=h;
+    c.getContext('2d').drawImage(img,0,0,w,h);
+    cb(c.toDataURL('image/jpeg',0.7));
+  };img.src=e.target.result;};
+  r.readAsDataURL(file);
+}
+function onPhotoPick(input,storeVar){const f=input.files&&input.files[0];if(!f)return;
+  compressImage(f,d=>{window[storeVar]=d;const pv=document.getElementById('phPreview');if(pv){pv.src=d;pv.style.display='block';}});}
+
+/* --- Başarılı baskı: onay + fotoğraf çek + kaydet --- */
+function successForm(job_id,printer_id){
+  window.__suPhoto=null;
+  popupCustom('ok','🎉','Başarılı baskı — onayla & kaydet',
+   `<div style="text-align:left">
+     <p style="font-size:13px;color:var(--txt2);margin:0 0 6px">Bu baskıyı <b>Başarılar</b>'a kaydediyorsun.</p>
+     <label>Adet fiyatı (₺)</label><input id="suPrice" type="number" value="0">
+     <label style="margin-top:8px">📷 Ürün fotoğrafı (çek veya yükle)</label>
+     <input id="suPhoto" type="file" accept="image/*" capture="environment" onchange="onPhotoPick(this,'__suPhoto')">
+     <img id="phPreview" style="display:none;max-width:100%;border-radius:10px;margin-top:8px">
+    </div>`,
+   [{label:"💾 Başarılara kaydet",cls:"btn",fn:`saveSuccess(${job_id},${printer_id})`},{label:"Vazgeç",cls:"btn alt",fn:"closeModal()"}]);
+}
+async function saveSuccess(job_id,printer_id){
+  const {data:j}=await sb.from('print_jobs').select('*').eq('id',job_id).maybeSingle();
+  if(!j){closeModal();return;}
+  const prName=(PRINTERS.find(x=>x.id===printer_id)||{}).name||null;
+  const price=+document.getElementById('suPrice').value||0;
+  await sb.from('print_jobs').update({status:'done',finished_at:new Date().toISOString()}).eq('id',job_id);
+  await sb.from('basari').insert({name:j.product||'-',qty:j.qty||1,mat:j.material||'-',price,delivered_to:j.customer||'-',printer:prName,photo_url:window.__suPhoto||null,created_by:DISPLAY[active]});
+  await logH('job',job_id,'başarılı','baskı tamamlandı: '+(j.product||''));
+  await sb.from('printers').update({status:'ready',ends_at:null,updated_by:DISPLAY[active]}).eq('id',printer_id);
+  window.__suPhoto=null;closeModal();toast("🎉 Başarılar'a eklendi");renderPrinters();
 }
 
 /* --- Stok hareketi (madde t) --- */
