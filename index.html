@@ -116,6 +116,11 @@
   .rp-legend .dot{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:4px}.dot.in{background:var(--ok)}.dot.out{background:var(--bad)}
   .rp-row{display:grid;grid-template-columns:1.2fr 1fr 1fr 1fr;gap:6px;padding:7px 4px;border-bottom:1px solid var(--line);font-size:12.5px;align-items:center}
   .rp-row.rp-head{color:var(--txt2);font-size:11px;border-bottom:1px solid var(--line)}
+  .rp-row.rp-click{cursor:pointer}.rp-row.rp-click:hover{background:rgba(120,120,140,.07)}
+  .rp-col.cur small{color:var(--txt);font-weight:700}
+  .rp-det{padding:2px 4px 8px;border-bottom:1px solid var(--line)}
+  .rp-item{display:flex;align-items:center;gap:8px;padding:5px 6px;font-size:12px;border-radius:8px}
+  .rp-item:nth-child(odd){background:rgba(120,120,140,.05)}
   .krow:last-child{border-bottom:none}.krow.passive{opacity:.45;text-decoration:line-through}
   .kio{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;font-size:14px;flex:0 0 auto}
   .kio.in{background:rgba(22,163,74,.14)}.kio.out{background:rgba(220,38,38,.12)}
@@ -361,9 +366,9 @@ m193 -380 c-10 -87 -79 -140 -152 -116 -37 12 -46 26 -46 71 0 38 29 66 77 74
       <div id="sp-kasa" class="hide">
         <div class="page-h" style="margin-top:14px"><span style="font-size:13px;color:var(--txt2)">Kasa · gelir/gider</span><span class="meta-upd" id="upd-kasa"></span></div>
         <div class="kasa-top">
-          <div class="glass stat"><small>GELİR</small><div class="n" style="color:var(--ok)" id="kIn">0 ₺</div></div>
-          <div class="glass stat"><small>GİDER</small><div class="n" style="color:var(--bad)" id="kOut">0 ₺</div></div>
-          <div class="glass stat"><small>BAKİYE</small><div class="n" id="kBal">0 ₺</div></div>
+          <div class="glass stat"><small id="kInL">GELİR · BUGÜN</small><div class="n" style="color:var(--ok)" id="kIn">0 ₺</div></div>
+          <div class="glass stat"><small id="kOutL">GİDER · BUGÜN</small><div class="n" style="color:var(--bad)" id="kOut">0 ₺</div></div>
+          <div class="glass stat"><small id="kBalL">NET · BUGÜN</small><div class="n" id="kBal">0 ₺</div></div>
         </div>
         <div class="seg" style="margin-bottom:6px">
           <button id="kt-all" class="on" onclick="kasaView('all')">Tümü</button>
@@ -374,8 +379,9 @@ m193 -380 c-10 -87 -79 -140 -152 -116 -37 12 -46 26 -46 71 0 38 29 66 77 74
           <button id="kp-day" class="on" onclick="kasaPeriod('day')">Günlük</button>
           <button id="kp-week" onclick="kasaPeriod('week')">Haftalık</button>
           <button id="kp-month" onclick="kasaPeriod('month')">Aylık</button>
-          <button onclick="kasaReport()" style="margin-left:auto">📊 Rapor</button>
+          <button id="kRepBtn" onclick="toggleKasaReport()" style="margin-left:auto">📊 Rapor</button>
         </div>
+        <div id="kasaRep" class="glass card hide" style="margin-bottom:12px;padding:14px"></div>
         <div class="glass kasa-form">
           <div><label>Açıklama</label><input id="kDesc" placeholder="Örn. anahtarlık satışı"></div>
           <div><label>Tutar (₺)</label><input id="kAmt" type="number" placeholder="0"></div>
@@ -791,55 +797,86 @@ async function saveNewPrinter(){const row={name:document.getElementById('npN').v
 /* ====== Kasa (Supabase) ====== */
 let kFilter='all',kPeriod='day';
 function kasaView(v){kFilter=v;['all','in','out'].forEach(x=>document.getElementById('kt-'+x).classList.toggle('on',x===v));renderKasa();}
-function kasaPeriod(p){kPeriod=p;['day','week','month'].forEach(x=>document.getElementById('kp-'+x).classList.toggle('on',x===p));renderKasa();}
+function kasaPeriod(p){kPeriod=p;['day','week','month'].forEach(x=>document.getElementById('kp-'+x).classList.toggle('on',x===p));renderKasa();if(!document.getElementById('kasaRep').classList.contains('hide'))renderKasaReport();}
 function periodStart(p){const d=new Date();d.setHours(0,0,0,0);
   if(p==='week'){const dow=(d.getDay()+6)%7;d.setDate(d.getDate()-dow);}
   if(p==='month')d.setDate(1);
   return d.getTime();}
 function kDateOf(k){return new Date((k.tdate||String(k.created_at).slice(0,10))+'T00:00:00');}
 const AY=['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'];
-let repData=null;
-async function kasaReport(){
-  popupCustom('info','📊','Kâr/Zarar Raporu',`<div class="hlist"><small>Yükleniyor...</small></div>`,[{label:"Kapat",cls:"btn alt",fn:"closeModal()"}]);
-  const since=new Date();since.setMonth(since.getMonth()-11);since.setDate(1);
-  const sinceStr=since.toISOString().slice(0,10);
-  const {data,error}=await sb.from('kasa').select('amount,type,passive,tdate,created_at,descr').is('deleted_at',null);
-  if(error){popupCustom('warn','!','Hata','Rapor yüklenemedi.',[{label:"Kapat",cls:"btn alt",fn:"closeModal()"}]);return;}
+const PER_LBL={day:'BUGÜN',week:'BU HAFTA',month:'BU AY'};
+const REP_TTL={day:'Günlük Rapor · son 14 gün',week:'Haftalık Rapor · son 12 hafta',month:'Aylık Rapor · son 12 ay'};
+let repBuckets=null;
+function weekStart(d){const x=new Date(d);x.setHours(0,0,0,0);const dow=(x.getDay()+6)%7;x.setDate(x.getDate()-dow);return x;}
+function bucketKey(d,p){
+  if(p==='day')return d.toISOString().slice(0,10);
+  if(p==='week')return weekStart(d).toISOString().slice(0,10);
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');}
+function bucketLabel(key,p){
+  if(p==='day'){const d=new Date(key+'T00:00:00');return d.getDate()+' '+AY[d.getMonth()];}
+  if(p==='week'){const d=new Date(key+'T00:00:00');const e=new Date(d);e.setDate(e.getDate()+6);return d.getDate()+' '+AY[d.getMonth()]+' – '+e.getDate()+' '+AY[e.getMonth()];}
+  const[y,m]=key.split('-');return AY[+m-1]+' '+y;}
+function bucketShort(key,p){
+  if(p==='day'){const d=new Date(key+'T00:00:00');return String(d.getDate());}
+  if(p==='week'){const d=new Date(key+'T00:00:00');return d.getDate()+'/'+(d.getMonth()+1);}
+  const[y,m]=key.split('-');return AY[+m-1];}
+function repSince(p){const d=new Date();d.setHours(0,0,0,0);
+  if(p==='day'){d.setDate(d.getDate()-13);return d;}
+  if(p==='week'){const w=weekStart(d);w.setDate(w.getDate()-11*7);return w;}
+  d.setDate(1);d.setMonth(d.getMonth()-11);return d;}
+function toggleKasaReport(){const el=document.getElementById('kasaRep');
+  if(el.classList.contains('hide')){el.classList.remove('hide');renderKasaReport();}
+  else el.classList.add('hide');}
+async function renderKasaReport(){
+  const el=document.getElementById('kasaRep');
+  el.innerHTML="<small style='color:var(--txt2)'>Yükleniyor...</small>";
+  const p=kPeriod,since=repSince(p);
+  const {data,error}=await sb.from('kasa').select('amount,type,passive,tdate,created_at,descr,created_by').is('deleted_at',null);
+  if(error){el.innerHTML="<small style='color:var(--bad)'>Rapor yüklenemedi.</small>";return;}
   const M={};(data||[]).forEach(k=>{if(k.passive)return;const d=kDateOf(k);if(d<since)return;
-    const key=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
-    if(!M[key])M[key]={in:0,out:0};M[key][k.type]+=Number(k.amount);});
-  repData=M;
+    const key=bucketKey(d,p);
+    if(!M[key])M[key]={in:0,out:0,items:[]};
+    M[key][k.type]+=Number(k.amount);M[key].items.push(k);});
+  repBuckets=M;
   const keys=Object.keys(M).sort().reverse();
-  if(!keys.length){popupCustom('info','📊','Kâr/Zarar Raporu','<small>Henüz kayıt yok.</small>',[{label:"Kapat",cls:"btn alt",fn:"closeModal()"}]);return;}
+  if(!keys.length){el.innerHTML=`<b>${REP_TTL[p]}</b><p style="font-size:12px;color:var(--txt2);margin:8px 0 0">Bu dönemde kayıt yok.</p>`;return;}
   const max=Math.max(1,...keys.map(k=>Math.max(M[k].in,M[k].out)));
-  const now=new Date();const curKey=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
-  const prev=new Date(now.getFullYear(),now.getMonth()-1,1);const prevKey=prev.getFullYear()+'-'+String(prev.getMonth()+1).padStart(2,'0');
+  const curKey=bucketKey(new Date(),p);
+  const prevD=new Date();if(p==='day')prevD.setDate(prevD.getDate()-1);else if(p==='week')prevD.setDate(prevD.getDate()-7);else prevD.setMonth(prevD.getMonth()-1);
+  const prevKey=bucketKey(prevD,p);
   const curNet=M[curKey]?M[curKey].in-M[curKey].out:0;
   const prevNet=M[prevKey]?M[prevKey].in-M[prevKey].out:null;
-  let cmp='';
+  let cmp='—';
   if(prevNet!==null&&prevNet!==0){const pct=Math.round((curNet-prevNet)/Math.abs(prevNet)*100);
-    cmp=`<span style="color:${pct>=0?'var(--ok)':'var(--bad)'}">${pct>=0?'▲':'▼'} %${Math.abs(pct)}</span> geçen aya göre`;}
-  else if(prevNet===0)cmp='geçen ay net 0 ₺ idi';
+    cmp=`<span style="color:${pct>=0?'var(--ok)':'var(--bad)'}">${pct>=0?'▲':'▼'} %${Math.abs(pct)}</span> önceki döneme göre`;}
   const totIn=keys.reduce((s,k)=>s+M[k].in,0),totOut=keys.reduce((s,k)=>s+M[k].out,0);
-  const bars=keys.slice().reverse().map(k=>{const[y,m]=k.split('-');const v=M[k];
-    return `<div class="rp-col" title="${AY[+m-1]} ${y}"><div class="rp-bars"><div class="rp-bar in" style="height:${Math.max(3,Math.round(v.in/max*70))}px"></div><div class="rp-bar out" style="height:${Math.max(3,Math.round(v.out/max*70))}px"></div></div><small>${AY[+m-1]}</small></div>`;}).join('');
-  const rows=keys.map(k=>{const[y,m]=k.split('-');const v=M[k];const net=v.in-v.out;
-    return `<div class="rp-row"><b>${AY[+m-1]} ${y}</b><span style="color:var(--ok)">+${fmt(v.in)}</span><span style="color:var(--bad)">−${fmt(v.out)}</span><b style="color:${net>=0?'var(--ok)':'var(--bad)'};text-align:right">${net>=0?'+':''}${fmt(net)} ₺</b></div>`;}).join('');
-  popupCustom('info','📊','Kâr/Zarar Raporu · son 12 ay',
-   `<div class="rp-sum"><div><small>BU AY NET</small><div class="n" style="color:${curNet>=0?'var(--ok)':'var(--bad)'}">${curNet>=0?'+':''}${fmt(curNet)} ₺</div><small>${cmp}</small></div>
+  const bars=keys.slice().reverse().map(k=>{const v=M[k];
+    return `<div class="rp-col${k===curKey?' cur':''}" title="${bucketLabel(k,p)}"><div class="rp-bars"><div class="rp-bar in" style="height:${Math.max(3,Math.round(v.in/max*70))}px"></div><div class="rp-bar out" style="height:${Math.max(3,Math.round(v.out/max*70))}px"></div></div><small>${bucketShort(k,p)}</small></div>`;}).join('');
+  const rows=keys.map((k,i)=>{const v=M[k];const net=v.in-v.out;
+    return `<div class="rp-row rp-click" onclick="repDetail('${k}')"><b>${bucketLabel(k,p)}${k===curKey?' •':''}</b><span style="color:var(--ok)">+${fmt(v.in)}</span><span style="color:var(--bad)">−${fmt(v.out)}</span><b style="color:${net>=0?'var(--ok)':'var(--bad)'};text-align:right">${net>=0?'+':''}${fmt(net)} ₺</b></div><div class="rp-det hide" id="rd-${k}"></div>`;}).join('');
+  el.innerHTML=`<div style="display:flex;align-items:center;margin-bottom:10px"><b>${REP_TTL[p]}</b><button class="mini" style="margin-left:auto" onclick="kasaCsv()">⬇️ CSV</button><button class="mini" onclick="toggleKasaReport()">✕</button></div>
+    <div class="rp-sum"><div><small>${PER_LBL[p]} NET</small><div class="n" style="color:${curNet>=0?'var(--ok)':'var(--bad)'}">${curNet>=0?'+':''}${fmt(curNet)} ₺</div><small>${cmp}</small></div>
       <div><small>DÖNEM TOPLAMI</small><div class="n">${fmt(totIn-totOut)} ₺</div><small>+${fmt(totIn)} / −${fmt(totOut)}</small></div></div>
     <div class="rp-chart">${bars}</div>
-    <div class="rp-legend"><span><i class="dot in"></i>Gelir</span><span><i class="dot out"></i>Gider</span></div>
-    <div class="rp-row rp-head"><b>Ay</b><span>Gelir</span><span>Gider</span><b style="text-align:right">Net</b></div>
-    <div style="max-height:200px;overflow:auto">${rows}</div>`,
-   [{label:"⬇️ CSV indir",cls:"btn alt",fn:"kasaCsv()"},{label:"Kapat",cls:"btn alt",fn:"closeModal()"}]);
+    <div class="rp-legend"><span><i class="dot in"></i>Gelir</span><span><i class="dot out"></i>Gider</span><span style="margin-left:auto">satıra tıkla → detay</span></div>
+    <div class="rp-row rp-head"><b>Dönem</b><span>Gelir</span><span>Gider</span><b style="text-align:right">Net</b></div>
+    <div style="max-height:260px;overflow:auto">${rows}</div>`;
 }
-function kasaCsv(){if(!repData)return;
-  const keys=Object.keys(repData).sort();
-  let csv="Ay;Gelir;Gider;Net\n";
-  keys.forEach(k=>{const v=repData[k];csv+=`${k};${v.in};${v.out};${v.in-v.out}\n`;});
+function repDetail(key){
+  const el=document.getElementById('rd-'+key);if(!el)return;
+  if(!el.classList.contains('hide')){el.classList.add('hide');return;}
+  const b=repBuckets&&repBuckets[key];if(!b)return;
+  el.innerHTML=b.items.sort((a,c)=>kDateOf(c)-kDateOf(a)).map(k=>{
+    const dt=kDateOf(k).toLocaleDateString('tr-TR');
+    return `<div class="rp-item"><span class="kio ${k.type}" style="font-size:12px">${k.type==='in'?'⬇️':'⬆️'}</span><span>${escapeHtml(k.descr||'')}<small style="display:block;color:var(--txt2)">${escapeHtml(k.created_by||'')} · ${dt}</small></span><b style="margin-left:auto;color:${k.type==='in'?'var(--ok)':'var(--bad)'}">${k.type==='in'?'+':'−'}${Number(k.amount).toLocaleString('tr-TR')} ₺</b></div>`;}).join('');
+  el.classList.remove('hide');
+}
+function kasaCsv(){if(!repBuckets)return;
+  const keys=Object.keys(repBuckets).sort();
+  let csv="Donem;Gelir;Gider;Net\n";
+  keys.forEach(k=>{const v=repBuckets[k];csv+=`${bucketLabel(k,kPeriod)};${v.in};${v.out};${v.in-v.out}\n`;});
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(["\ufeff"+csv],{type:'text/csv;charset=utf-8'}));
-  a.download='oruvian-kar-zarar.csv';a.click();toast("⬇️ CSV indirildi");}
+  a.download='oruvian-rapor-'+kPeriod+'.csv';a.click();toast("⬇️ CSV indirildi");}
 async function renderKasa(){
   document.getElementById('upd-kasa').textContent="Son güncelleyen: "+stamp();
   const kd=document.getElementById('kDate');if(kd&&!kd.value)kd.value=new Date().toISOString().slice(0,10);
@@ -866,6 +903,9 @@ async function renderKasa(){
     el.appendChild(r);
   });
   if(!el.children.length)el.innerHTML="<div style='padding:12px;font-size:12px;color:var(--txt2)'>Kayıt yok.</div>";
+  document.getElementById('kInL').textContent="GELİR · "+PER_LBL[kPeriod];
+  document.getElementById('kOutL').textContent="GİDER · "+PER_LBL[kPeriod];
+  document.getElementById('kBalL').textContent="NET · "+PER_LBL[kPeriod];
   document.getElementById('kIn').textContent=fmt(inS)+" ₺";document.getElementById('kOut').textContent=fmt(outS)+" ₺";document.getElementById('kBal').textContent=fmt(inS-outS)+" ₺";
 }
 async function addKasa(){const desc=document.getElementById('kDesc').value.trim();const amt=parseFloat(document.getElementById('kAmt').value);const type=document.getElementById('kType').value;
