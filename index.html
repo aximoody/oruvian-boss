@@ -428,11 +428,13 @@ m193 -380 c-10 -87 -79 -140 -152 -116 -37 12 -46 26 -46 71 0 38 29 66 77 74
         <button id="qt-ayar" onclick="quoteTab('ayar')">⚙️ Ayarla</button>
         <button id="qt-teklif" onclick="quoteTab('teklifler')">📁 Teklifler</button>
         <button id="qt-musteri" onclick="quoteTab('musteri')">👥 Müşteriler</button>
+        <button id="qt-urun" onclick="quoteTab('urun')">📦 Ürünler</button>
       </div>
 
       <div id="q-hesap">
         <div class="glass card" style="margin-top:14px">
           <div class="calc-grid">
+            <div style="grid-column:1/-1"><label>📦 Kayıtlı ürün (seçince alanlar dolar)</label><select id="cProd" onchange="applyProduct()"><option value="">— Elle gir —</option></select></div>
             <div><label>🖨️ Yazıcı</label><select id="cPrinter"></select></div>
             <div><label>⚖️ Filament (g)</label><input id="cGram" type="number" value="120"></div>
             <div><label>⏱️ Baskı süresi (saat)</label><input id="cPrint" type="number" value="4"></div>
@@ -454,6 +456,7 @@ m193 -380 c-10 -87 -79 -140 -152 -116 -37 12 -46 26 -46 71 0 38 29 66 77 74
           <div class="break" id="rBreak"></div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px">
             <button class="btn" style="flex:1" onclick="openOffer()">📤 Teklifi sun</button>
+            <button class="btn alt" style="flex:1" onclick="quotePdf()">🧾 PDF teklif</button>
             <button class="btn alt" style="flex:1" onclick="sendToPrinter()">🖨️ Yazıcıya al</button>
           </div>
         </div>
@@ -498,6 +501,11 @@ m193 -380 c-10 -87 -79 -140 -152 -116 -37 12 -46 26 -46 71 0 38 29 66 77 74
       <div id="q-musteri" class="hide">
         <div class="page-h" style="margin-top:14px"><span style="font-size:13px;color:var(--txt2)">Müşteri kayıtları</span><button class="mini" style="margin-left:auto" onclick="addCustomer()">+ Müşteri ekle</button></div>
         <div class="glass card" id="custList"></div>
+      </div>
+
+      <div id="q-urun" class="hide">
+        <div class="page-h" style="margin-top:14px"><span style="font-size:13px;color:var(--txt2)">Ürün kataloğu — standart ürünler için hızlı teklif</span><button class="mini" style="margin-left:auto" onclick="addProduct()">+ Ürün ekle</button></div>
+        <div class="glass card" id="prodList"></div>
       </div>
     </div>
 
@@ -1038,14 +1046,17 @@ async function saveSettings(){
 
 /* ====== Teklif hesap ====== */
 function fillPrinters(){const s=document.getElementById('cPrinter');if(!s)return;s.innerHTML="";PRINTERS.forEach((p,i)=>{if(p.kind==='device')return;s.add(new Option(p.name+" ("+STATUS_TR[p.status]+")",i));});}
-function quoteTab(t){['hesap','result','ayar','teklifler','musteri'].forEach(x=>document.getElementById('q-'+x).classList.toggle('hide',x!==t));
+function quoteTab(t){['hesap','result','ayar','teklifler','musteri','urun'].forEach(x=>document.getElementById('q-'+x).classList.toggle('hide',x!==t));
   document.getElementById('qt-hesap').classList.toggle('on',t==='hesap'||t==='result');
   document.getElementById('qt-ayar').classList.toggle('on',t==='ayar');
   document.getElementById('qt-teklif').classList.toggle('on',t==='teklifler');
   document.getElementById('qt-musteri').classList.toggle('on',t==='musteri');
+  document.getElementById('qt-urun').classList.toggle('on',t==='urun');
+  if(t==='hesap')loadProdSelect();
   if(t==='ayar')loadSettings();
   if(t==='teklifler')renderQuotes();
-  if(t==='musteri')renderCustomers();}
+  if(t==='musteri')renderCustomers();
+  if(t==='urun')renderProducts();}
 function num(id){return parseFloat(document.getElementById(id).value)||0;}
 function settings(){const parts=Math.max(1,num('sParts'));const months=Math.max(1,num('sAmortMonths')||36);
   const shopMonthly=(num('sShopAmort')||0)/months;
@@ -1106,6 +1117,103 @@ async function saveQuote(){if(!lastCalc)return;
   if(cn)await upsertCustomer(cn,cp);
   const {error}=await sb.from('quotes').insert({summary:`${lastCalc.inp.qty} adet baskı${cn?' · '+cn:''}`,amount:fmt(lastCalc.rows[0].r.total)+" ₺",status:'bek',customer:cn||null,created_by:DISPLAY[active]});
   closeModal();if(error){toast("⚠️ Kaydedilemedi");return;}toast("💾 Teklif 'Beklemede' kaydedildi");}
+
+/* ====== Ürün kataloğu ====== */
+let PRODCACHE=[];
+async function loadProdSelect(){
+  const sel=document.getElementById('cProd');if(!sel)return;
+  const {data}=await sb.from('products').select('*').is('deleted_at',null).order('name');
+  PRODCACHE=data||[];
+  const cur=sel.value;
+  sel.innerHTML='<option value="">— Elle gir —</option>'+PRODCACHE.map(p=>`<option value="${p.id}">${escapeHtml(p.name)} (${p.gram} g)</option>`).join('');
+  sel.value=cur;
+}
+function applyProduct(){
+  const id=document.getElementById('cProd').value;if(!id)return;
+  const p=PRODCACHE.find(x=>String(x.id)===id);if(!p)return;
+  document.getElementById('cGram').value=p.gram;
+  document.getElementById('cPrint').value=p.print_hours;
+  if(p.labor!=null)document.getElementById('cLabor').value=p.labor;
+  document.getElementById('cDesign').value=0;
+  toast("📦 "+p.name+" yüklendi — adet gir, hesapla");
+}
+async function renderProducts(){
+  const el=document.getElementById('prodList');el.innerHTML="<div style='padding:10px;font-size:12px;color:var(--txt2)'>Yükleniyor...</div>";
+  const {data,error}=await sb.from('products').select('*').is('deleted_at',null).order('name');
+  el.innerHTML="";if(error){el.innerHTML="<div style='padding:10px;font-size:12px;color:var(--bad)'>Yüklenemedi.</div>";return;}
+  PRODCACHE=data||[];
+  if(!data.length){el.innerHTML="<div style='padding:10px;font-size:12px;color:var(--txt2)'>Henüz ürün yok. Standart ürünlerini (anahtarlık vb.) ekle, teklif 10 saniyeye insin.</div>";return;}
+  data.forEach(p=>{
+    const r=document.createElement('div');r.className="krow";
+    r.innerHTML=`<div style="font-size:18px">📦</div>
+      <div><div style="font-weight:600">${escapeHtml(p.name)}</div><div style="font-size:11px;color:var(--txt2)">⚖️ ${p.gram} g · ⏱️ ${p.print_hours} sa · 🧰 ${p.labor??0.4} sa ${p.note?'· '+escapeHtml(p.note):''}</div></div>
+      <button class="mini" style="margin-left:auto" onclick="useProduct(${p.id})">⚡ Teklif</button>
+      <button class="mini" onclick="editProduct(${p.id})">✏️</button>
+      ${hBtn('products',p.id,p.name)}
+      <button class="mini" onclick="askDelete('products',${p.id},'${escapeHtml(p.name||'').replace(/'/g,'')}','renderProducts')">🗑️</button>`;
+    el.appendChild(r);});
+}
+function useProduct(id){quoteTab('hesap');setTimeout(()=>{document.getElementById('cProd').value=String(id);applyProduct();document.getElementById('cQty').focus();},150);}
+function prodForm(p){return `<input id="pN" placeholder="Ürün adı (örn. Anahtarlık - logo)" value="${escapeHtml(p?.name||'')}" style="margin-bottom:8px">
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">
+    <div><label style="font-size:12px;color:var(--txt2)">⚖️ Gram</label><input id="pG" type="number" value="${p?.gram??15}"></div>
+    <div><label style="font-size:12px;color:var(--txt2)">⏱️ Baskı (sa)</label><input id="pP" type="number" value="${p?.print_hours??0.5}"></div>
+    <div><label style="font-size:12px;color:var(--txt2)">🧰 İşçilik (sa)</label><input id="pL" type="number" value="${p?.labor??0.1}"></div>
+  </div><input id="pNote" placeholder="Not (opsiyonel)" value="${escapeHtml(p?.note||'')}">`;}
+function addProduct(){popupCustom('info','📦','Ürün ekle',prodForm(null),[{label:"💾 Kaydet",cls:"btn",fn:"saveNewProduct()"},{label:"Vazgeç",cls:"btn alt",fn:"closeModal()"}]);}
+async function saveNewProduct(){const n=document.getElementById('pN').value.trim();if(!n){toast("⚠️ Ad gerekli");return;}
+  const rec={name:n,gram:parseFloat(document.getElementById('pG').value)||0,print_hours:parseFloat(document.getElementById('pP').value)||0,labor:parseFloat(document.getElementById('pL').value)||0,note:document.getElementById('pNote').value.trim()||null,created_by:DISPLAY[active]};
+  const {data,error}=await sb.from('products').insert(rec).select().maybeSingle();
+  closeModal();if(error){toast("⚠️ Eklenemedi");return;}
+  await logH('products',data?data.id:null,'eklendi',n);renderProducts();toast("✅ Ürün eklendi");}
+async function editProduct(id){
+  const p=PRODCACHE.find(x=>x.id===id);if(!p)return;
+  popupCustom('info','✏️','Ürünü düzenle',prodForm(p),[{label:"💾 Kaydet",cls:"btn",fn:"saveEditProduct("+id+")"},{label:"Vazgeç",cls:"btn alt",fn:"closeModal()"}]);}
+async function saveEditProduct(id){const n=document.getElementById('pN').value.trim();if(!n){toast("⚠️ Ad gerekli");return;}
+  const rec={name:n,gram:parseFloat(document.getElementById('pG').value)||0,print_hours:parseFloat(document.getElementById('pP').value)||0,labor:parseFloat(document.getElementById('pL').value)||0,note:document.getElementById('pNote').value.trim()||null};
+  const {error}=await sb.from('products').update(rec).eq('id',id);
+  closeModal();if(error){toast("⚠️ Kaydedilemedi");return;}
+  await logH('products',id,'güncellendi',n);renderProducts();toast("✅ Güncellendi");}
+
+/* ====== PDF Teklif ====== */
+function quotePdf(){
+  if(!lastCalc)return;
+  const{rows,inp}=lastCalc;const top=rows.slice(0,3);
+  const cust='';
+  const today=new Date();const no='ORV-'+today.getFullYear()+String(today.getMonth()+1).padStart(2,'0')+String(today.getDate()).padStart(2,'0')+'-'+String(today.getHours()).padStart(2,'0')+String(today.getMinutes()).padStart(2,'0');
+  const val=new Date(today);val.setDate(val.getDate()+15);
+  const prodSel=document.getElementById('cProd');
+  const prodName=prodSel&&prodSel.value?(PRODCACHE.find(x=>String(x.id)===prodSel.value)?.name||'3D baskı ürün'):'3D baskı ürün';
+  const trs=top.map((x,i)=>`<tr${i===0?' class="rec"':''}><td>${x.m.name}${i===0?' <span class="tag">Önerilen</span>':''}</td><td>${inp.qty}</td><td>${fmt(x.r.price)} ₺</td><td><b>${fmt(x.r.total)} ₺</b></td></tr>`).join('');
+  const w=window.open('','_blank');
+  w.document.write(`<!DOCTYPE html><html lang="tr"><head><meta charset="utf-8"><title>Teklif ${no}</title><style>
+    *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,sans-serif}
+    body{padding:48px 56px;color:#1a1a1e;font-size:13px}
+    .top{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #1a1a1e;padding-bottom:18px}
+    .logo{font-size:30px;font-weight:800;letter-spacing:3px}.logo small{display:block;font-size:10px;letter-spacing:2px;color:#777;font-weight:600}
+    .meta{text-align:right;font-size:12px;color:#555;line-height:1.7}
+    h2{font-size:15px;margin:26px 0 4px}
+    .info{color:#555;line-height:1.7;margin-bottom:6px}
+    table{width:100%;border-collapse:collapse;margin:14px 0}
+    th{text-align:left;font-size:11px;letter-spacing:.5px;color:#777;border-bottom:2px solid #ddd;padding:8px 10px}
+    td{padding:10px;border-bottom:1px solid #eee}
+    tr.rec{background:#f4faf5}
+    .tag{font-size:10px;background:#e2f3e6;color:#1c7c35;border-radius:10px;padding:2px 8px;font-weight:600}
+    .terms{margin-top:26px;font-size:11.5px;color:#666;line-height:1.8}
+    .foot{margin-top:44px;padding-top:14px;border-top:1px solid #ddd;font-size:11px;color:#888;display:flex;justify-content:space-between}
+    @media print{body{padding:24px 32px}}
+  </style></head><body>
+    <div class="top"><div class="logo">ORUVIAN<small>3D BASKI ÇÖZÜMLERİ</small></div>
+    <div class="meta"><b>FİYAT TEKLİFİ</b><br>Teklif No: ${no}<br>Tarih: ${today.toLocaleDateString('tr-TR')}<br>Geçerlilik: ${val.toLocaleDateString('tr-TR')}</div></div>
+    <h2>Sayın Yetkili,</h2>
+    <p class="info">Talebiniz doğrultusunda hazırladığımız fiyat teklifimiz aşağıdadır. Malzeme seçenekleri kullanım amacına göre sunulmuştur.</p>
+    <table><tr><th>ÜRÜN / MALZEME</th><th>ADET</th><th>BİRİM FİYAT</th><th>TOPLAM</th></tr>
+    <tr><td colspan="4" style="font-weight:600;background:#fafafa">${escapeHtml(prodName)} — ${inp.qty} adet</td></tr>${trs}</table>
+    <div class="terms"><b>Koşullar</b><br>• Fiyatlara KDV dahil değildir. • Teslim süresi sipariş onayından itibaren netleştirilir. • PLA dekoratif ve ekonomik kullanım, PETG dayanıklı kullanım içindir. • Teklif belirtilen tarihe kadar geçerlidir.</div>
+    <div class="foot"><span>Oruvian · oruvian.com</span><span>info@oruvian.com</span></div>
+    <script>window.onload=()=>setTimeout(()=>window.print(),300)<\/script></body></html>`);
+  w.document.close();
+}
 
 /* ====== Müşteriler (mini CRM) ====== */
 async function upsertCustomer(name,phone){
@@ -1218,6 +1326,7 @@ const TRASH_TABLES=[
   {t:'stock',label:'Filament',icon:'🧵',disp:r=>`${r.brand||''} ${r.color||''} (${r.grams}g)`},
   {t:'kasa',label:'Kasa',icon:'💳',disp:r=>`${r.descr} · ${r.amount}₺`},
   {t:'customers',label:'Müşteri',icon:'👥',disp:r=>r.name},
+  {t:'products',label:'Ürün',icon:'📦',disp:r=>r.name},
   {t:'basari',label:'Başarı',icon:'🎉',disp:r=>r.name},
   {t:'recycle',label:'Geri dönüşüm',icon:'♻️',disp:r=>r.name},
   {t:'quotes',label:'Teklif',icon:'📄',disp:r=>r.summary},
