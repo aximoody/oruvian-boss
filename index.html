@@ -104,6 +104,18 @@
   .stat{padding:14px;text-align:center}.stat .n{font-size:19px;font-weight:700}.stat small{font-size:10px;color:var(--txt2);letter-spacing:.5px}
   .kasa-form{display:grid;grid-template-columns:1.4fr 1fr auto;gap:10px;align-items:end;padding:13px;margin-bottom:12px}
   .krow{display:flex;align-items:center;gap:12px;padding:10px 14px;border-bottom:1px solid var(--line);font-size:13px}
+  .rp-sum{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+  .rp-sum>div{background:rgba(120,120,140,.08);border:1px solid var(--line);border-radius:12px;padding:10px}
+  .rp-sum small{font-size:10px;color:var(--txt2);letter-spacing:.5px}.rp-sum .n{font-size:20px;font-weight:700;margin:2px 0}
+  .rp-chart{display:flex;align-items:flex-end;gap:6px;height:95px;padding:4px 2px;border-bottom:1px solid var(--line)}
+  .rp-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px}
+  .rp-col small{font-size:9px;color:var(--txt2)}
+  .rp-bars{display:flex;align-items:flex-end;gap:2px;height:72px}
+  .rp-bar{width:9px;border-radius:3px 3px 0 0}.rp-bar.in{background:var(--ok)}.rp-bar.out{background:var(--bad)}
+  .rp-legend{display:flex;gap:14px;font-size:11px;color:var(--txt2);margin:6px 0 10px}
+  .rp-legend .dot{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:4px}.dot.in{background:var(--ok)}.dot.out{background:var(--bad)}
+  .rp-row{display:grid;grid-template-columns:1.2fr 1fr 1fr 1fr;gap:6px;padding:7px 4px;border-bottom:1px solid var(--line);font-size:12.5px;align-items:center}
+  .rp-row.rp-head{color:var(--txt2);font-size:11px;border-bottom:1px solid var(--line)}
   .krow:last-child{border-bottom:none}.krow.passive{opacity:.45;text-decoration:line-through}
   .kio{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;font-size:14px;flex:0 0 auto}
   .kio.in{background:rgba(22,163,74,.14)}.kio.out{background:rgba(220,38,38,.12)}
@@ -368,6 +380,7 @@ m193 -380 c-10 -87 -79 -140 -152 -116 -37 12 -46 26 -46 71 0 38 29 66 77 74
           <div><label>Açıklama</label><input id="kDesc" placeholder="Örn. anahtarlık satışı"></div>
           <div><label>Tutar (₺)</label><input id="kAmt" type="number" placeholder="0"></div>
           <div><label>Tür</label><select id="kType"><option value="in">Gelir ⬇️</option><option value="out">Gider ⬆️</option></select></div>
+          <div><label>Tarih</label><input id="kDate" type="date"></div>
         </div>
         <button class="btn sm" style="margin-bottom:12px" onclick="addKasa()">💾 Kaydet</button>
         <div class="glass card" style="padding:4px"><div id="kasaList"></div></div>
@@ -783,38 +796,71 @@ function periodStart(p){const d=new Date();d.setHours(0,0,0,0);
   if(p==='week'){const dow=(d.getDay()+6)%7;d.setDate(d.getDate()-dow);}
   if(p==='month')d.setDate(1);
   return d.getTime();}
+function kDateOf(k){return new Date((k.tdate||String(k.created_at).slice(0,10))+'T00:00:00');}
+const AY=['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'];
+let repData=null;
 async function kasaReport(){
-  popupCustom('info','📊','Aylık Kâr/Zarar',`<div class="hlist"><small>Yükleniyor...</small></div>`,[{label:"Kapat",cls:"btn alt",fn:"closeModal()"}]);
-  const since=new Date();since.setMonth(since.getMonth()-5);since.setDate(1);since.setHours(0,0,0,0);
-  const {data,error}=await sb.from('kasa').select('amount,type,passive,created_at').is('deleted_at',null).gte('created_at',since.toISOString());
+  popupCustom('info','📊','Kâr/Zarar Raporu',`<div class="hlist"><small>Yükleniyor...</small></div>`,[{label:"Kapat",cls:"btn alt",fn:"closeModal()"}]);
+  const since=new Date();since.setMonth(since.getMonth()-11);since.setDate(1);
+  const sinceStr=since.toISOString().slice(0,10);
+  const {data,error}=await sb.from('kasa').select('amount,type,passive,tdate,created_at,descr').is('deleted_at',null);
   if(error){popupCustom('warn','!','Hata','Rapor yüklenemedi.',[{label:"Kapat",cls:"btn alt",fn:"closeModal()"}]);return;}
-  const M={};(data||[]).forEach(k=>{if(k.passive)return;const d=new Date(k.created_at);const key=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+  const M={};(data||[]).forEach(k=>{if(k.passive)return;const d=kDateOf(k);if(d<since)return;
+    const key=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
     if(!M[key])M[key]={in:0,out:0};M[key][k.type]+=Number(k.amount);});
+  repData=M;
   const keys=Object.keys(M).sort().reverse();
-  const AY=['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'];
+  if(!keys.length){popupCustom('info','📊','Kâr/Zarar Raporu','<small>Henüz kayıt yok.</small>',[{label:"Kapat",cls:"btn alt",fn:"closeModal()"}]);return;}
+  const max=Math.max(1,...keys.map(k=>Math.max(M[k].in,M[k].out)));
+  const now=new Date();const curKey=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+  const prev=new Date(now.getFullYear(),now.getMonth()-1,1);const prevKey=prev.getFullYear()+'-'+String(prev.getMonth()+1).padStart(2,'0');
+  const curNet=M[curKey]?M[curKey].in-M[curKey].out:0;
+  const prevNet=M[prevKey]?M[prevKey].in-M[prevKey].out:null;
+  let cmp='';
+  if(prevNet!==null&&prevNet!==0){const pct=Math.round((curNet-prevNet)/Math.abs(prevNet)*100);
+    cmp=`<span style="color:${pct>=0?'var(--ok)':'var(--bad)'}">${pct>=0?'▲':'▼'} %${Math.abs(pct)}</span> geçen aya göre`;}
+  else if(prevNet===0)cmp='geçen ay net 0 ₺ idi';
+  const totIn=keys.reduce((s,k)=>s+M[k].in,0),totOut=keys.reduce((s,k)=>s+M[k].out,0);
+  const bars=keys.slice().reverse().map(k=>{const[y,m]=k.split('-');const v=M[k];
+    return `<div class="rp-col" title="${AY[+m-1]} ${y}"><div class="rp-bars"><div class="rp-bar in" style="height:${Math.max(3,Math.round(v.in/max*70))}px"></div><div class="rp-bar out" style="height:${Math.max(3,Math.round(v.out/max*70))}px"></div></div><small>${AY[+m-1]}</small></div>`;}).join('');
   const rows=keys.map(k=>{const[y,m]=k.split('-');const v=M[k];const net=v.in-v.out;
-    return `<div class="hrow"><b>${AY[+m-1]} ${y}</b> — Gelir <span style="color:var(--ok)">+${fmt(v.in)}₺</span> · Gider <span style="color:var(--bad)">−${fmt(v.out)}₺</span><small>Net: <b style="color:${net>=0?'var(--ok)':'var(--bad)'}">${net>=0?'+':''}${fmt(net)} ₺</b></small></div>`;}).join('')||"<small>Bu dönemde kayıt yok.</small>";
-  popupCustom('info','📊','Aylık Kâr/Zarar · son 6 ay',`<div class="hlist">${rows}</div>`,[{label:"Kapat",cls:"btn alt",fn:"closeModal()"}]);
+    return `<div class="rp-row"><b>${AY[+m-1]} ${y}</b><span style="color:var(--ok)">+${fmt(v.in)}</span><span style="color:var(--bad)">−${fmt(v.out)}</span><b style="color:${net>=0?'var(--ok)':'var(--bad)'};text-align:right">${net>=0?'+':''}${fmt(net)} ₺</b></div>`;}).join('');
+  popupCustom('info','📊','Kâr/Zarar Raporu · son 12 ay',
+   `<div class="rp-sum"><div><small>BU AY NET</small><div class="n" style="color:${curNet>=0?'var(--ok)':'var(--bad)'}">${curNet>=0?'+':''}${fmt(curNet)} ₺</div><small>${cmp}</small></div>
+      <div><small>DÖNEM TOPLAMI</small><div class="n">${fmt(totIn-totOut)} ₺</div><small>+${fmt(totIn)} / −${fmt(totOut)}</small></div></div>
+    <div class="rp-chart">${bars}</div>
+    <div class="rp-legend"><span><i class="dot in"></i>Gelir</span><span><i class="dot out"></i>Gider</span></div>
+    <div class="rp-row rp-head"><b>Ay</b><span>Gelir</span><span>Gider</span><b style="text-align:right">Net</b></div>
+    <div style="max-height:200px;overflow:auto">${rows}</div>`,
+   [{label:"⬇️ CSV indir",cls:"btn alt",fn:"kasaCsv()"},{label:"Kapat",cls:"btn alt",fn:"closeModal()"}]);
 }
+function kasaCsv(){if(!repData)return;
+  const keys=Object.keys(repData).sort();
+  let csv="Ay;Gelir;Gider;Net\n";
+  keys.forEach(k=>{const v=repData[k];csv+=`${k};${v.in};${v.out};${v.in-v.out}\n`;});
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(["\ufeff"+csv],{type:'text/csv;charset=utf-8'}));
+  a.download='oruvian-kar-zarar.csv';a.click();toast("⬇️ CSV indirildi");}
 async function renderKasa(){
   document.getElementById('upd-kasa').textContent="Son güncelleyen: "+stamp();
+  const kd=document.getElementById('kDate');if(kd&&!kd.value)kd.value=new Date().toISOString().slice(0,10);
   const el=document.getElementById('kasaList');el.innerHTML="<div style='padding:12px;font-size:12px;color:var(--txt2)'>Yükleniyor...</div>";
-  const {data,error}=await sb.from('kasa').select('*').is('deleted_at',null).order('id',{ascending:false});
+  const {data,error}=await sb.from('kasa').select('*').is('deleted_at',null).order('tdate',{ascending:false}).order('id',{ascending:false});
   if(error){el.innerHTML="<div style='padding:12px;font-size:12px;color:var(--bad)'>Kasa yüklenemedi.</div>";return;}
   const start=periodStart(kPeriod);
   let inS=0,outS=0;el.innerHTML="";
   data.forEach(k=>{
     const amt=Number(k.amount);
-    const inPeriod=new Date(k.created_at).getTime()>=start;
+    const inPeriod=kDateOf(k).getTime()>=start;
     if(!k.passive&&inPeriod){if(k.type==='in')inS+=amt;else outS+=amt;}
     if(!inPeriod)return;
     if(kFilter!=='all'&&k.type!==kFilter)return;
-    const dt=new Date(k.created_at).toLocaleDateString('tr-TR');
+    const dt=kDateOf(k).toLocaleDateString('tr-TR');
     const r=document.createElement('div');r.className="krow"+(k.passive?" passive":"");
     r.innerHTML=`<div class="kio ${k.type}">${k.type==='in'?'⬇️':'⬆️'}</div>
       <div><div style="font-weight:600">${escapeHtml(k.descr)}</div><div style="font-size:11px;color:var(--txt2)">${escapeHtml(k.created_by||'')} · ${dt}</div></div>
       <div class="kamt ${k.type}">${k.type==='in'?'+':'−'}${amt.toLocaleString('tr-TR')} ₺</div>
       ${k.passive?'<span class="tag" style="background:rgba(120,120,130,.15)">Pasif</span>':`<button class="mini" style="margin-left:8px" onclick="passiveKasa(${k.id})">Pasif yap</button>`}
+      <button class="mini" onclick="editKasa(${k.id})">✏️</button>
       ${hBtn('kasa',k.id,k.descr)}
       <button class="mini" onclick="askDelete('kasa',${k.id},'${escapeHtml(k.descr||'').replace(/'/g,'')}','renderKasa')">🗑️</button>`;
     el.appendChild(r);
@@ -823,11 +869,32 @@ async function renderKasa(){
   document.getElementById('kIn').textContent=fmt(inS)+" ₺";document.getElementById('kOut').textContent=fmt(outS)+" ₺";document.getElementById('kBal').textContent=fmt(inS-outS)+" ₺";
 }
 async function addKasa(){const desc=document.getElementById('kDesc').value.trim();const amt=parseFloat(document.getElementById('kAmt').value);const type=document.getElementById('kType').value;
+  const tdate=document.getElementById('kDate').value||new Date().toISOString().slice(0,10);
   if(!desc||isNaN(amt)||amt<=0){popup('warn','!','Eksik bilgi','Açıklama ve geçerli bir tutar gir.');return;}
-  const {data,error}=await sb.from('kasa').insert({descr:desc,amount:amt,type:type,created_by:DISPLAY[active]}).select().maybeSingle();
+  const {data,error}=await sb.from('kasa').insert({descr:desc,amount:amt,type:type,tdate,created_by:DISPLAY[active]}).select().maybeSingle();
   if(error){toast("⚠️ Kaydedilemedi");return;}
-  await logH('kasa',data?data.id:null,'eklendi',(type==='in'?'+':'-')+amt+'₺ · '+desc);
-  document.getElementById('kDesc').value="";document.getElementById('kAmt').value="";renderKasa();toast("✅ Kaydedildi");}
+  await logH('kasa',data?data.id:null,'eklendi',(type==='in'?'+':'-')+amt+'₺ · '+desc+' · '+tdate);
+  document.getElementById('kDesc').value="";document.getElementById('kAmt').value="";document.getElementById('kDate').value=new Date().toISOString().slice(0,10);renderKasa();toast("✅ Kaydedildi");}
+async function editKasa(id){
+  const {data:k}=await sb.from('kasa').select('*').eq('id',id).maybeSingle();if(!k)return;
+  const td=k.tdate||String(k.created_at).slice(0,10);
+  popupCustom('info','✏️','Kasa kaydını düzenle',
+   `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div style="grid-column:1/3"><label style="font-size:12px;color:var(--txt2)">Açıklama</label><input id="ekD" value="${escapeHtml(k.descr||'')}"></div>
+      <div><label style="font-size:12px;color:var(--txt2)">Tutar (₺)</label><input id="ekA" type="number" value="${Number(k.amount)}"></div>
+      <div><label style="font-size:12px;color:var(--txt2)">Tarih</label><input id="ekT" type="date" value="${td}"></div>
+      <div style="grid-column:1/3"><label style="font-size:12px;color:var(--txt2)">Tür</label><select id="ekTy"><option value="in" ${k.type==='in'?'selected':''}>Gelir ⬇️</option><option value="out" ${k.type==='out'?'selected':''}>Gider ⬆️</option></select></div>
+    </div>`,
+   [{label:"💾 Kaydet",cls:"btn",fn:"saveEditKasa("+id+")"},{label:"Vazgeç",cls:"btn alt",fn:"closeModal()"}]);
+}
+async function saveEditKasa(id){
+  const desc=document.getElementById('ekD').value.trim();const amt=parseFloat(document.getElementById('ekA').value);
+  const tdate=document.getElementById('ekT').value;const type=document.getElementById('ekTy').value;
+  if(!desc||isNaN(amt)||amt<=0||!tdate){toast("⚠️ Eksik bilgi");return;}
+  const {error}=await sb.from('kasa').update({descr:desc,amount:amt,type,tdate,updated_by:DISPLAY[active]}).eq('id',id);
+  closeModal();if(error){toast("⚠️ Kaydedilemedi");return;}
+  await logH('kasa',id,'güncellendi',(type==='in'?'+':'-')+amt+'₺ · '+desc+' · '+tdate);
+  renderKasa();toast("✅ Güncellendi");}
 async function passiveKasa(id){const {error}=await sb.from('kasa').update({passive:true,updated_by:DISPLAY[active]}).eq('id',id);if(error){toast("⚠️ İşlem başarısız");return;}renderKasa();toast("Kayıt pasife alındı (silinmedi)");}
 
 /* ====== Başarılar (Supabase) ====== */
