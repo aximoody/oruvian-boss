@@ -508,6 +508,10 @@ m193 -380 c-10 -87 -79 -140 -152 -116 -37 12 -46 26 -46 71 0 38 29 66 77 74
             <div><label>📈 Kâr marjı (%)</label><input id="sMargin" type="number" value="100"></div>
             <div><label>💸 Adet indirimi max (%)</label><input id="sQtyDisc" type="number" value="20"></div>
             <div><label>🛒 Pazaryeri komisyonu (%)</label><input id="sMarket" type="number" value="20"></div>
+            <div><label>🪣 Rötuş malzeme /adet (aseton, zımpara ₺)</label><input id="sFinMat" type="number" value="15"></div>
+            <div><label>🖐️ Rötuş işçilik /adet (dk)</label><input id="sFinMin" type="number" value="8"></div>
+            <div><label>🎚️ İyi kademe indirimi (%)</label><input id="sGoodDisc" type="number" value="15"></div>
+            <div><label>💎 Mükemmel prim (%)</label><input id="sPerfPrem" type="number" value="15"></div>
             <div><label>🖨️ Tarayıcı amortismanı (₺)</label><input id="sScanAmort" type="number" value="30000"></div>
             <div><label>🏪 Dükkan amortismanı (₺)</label><input id="sShopAmort" type="number" value="60000"></div>
             <div><label>📆 Amortisman süresi (ay)</label><input id="sAmortMonths" type="number" value="36"></div>
@@ -601,6 +605,16 @@ m193 -380 c-10 -87 -79 -140 -152 -116 -37 12 -46 26 -46 71 0 38 29 66 77 74
 .colorpick{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
 .cchip{display:inline-flex;align-items:center;gap:4px;font-size:12px;padding:5px 9px;border:1px solid var(--line);border-radius:20px;cursor:pointer}
 .cchip input{margin:0}
+.tierbox{display:block;padding:12px 14px}
+.tierbox .ml{margin-bottom:8px;font-weight:600}
+.tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+@media(max-width:520px){.tiers{grid-template-columns:1fr}}
+.tier{border:1px solid var(--line);border-radius:12px;padding:10px;text-align:center;display:flex;flex-direction:column;gap:2px}
+.tier .tl{font-size:11px;color:var(--txt2);font-weight:600;text-transform:uppercase;letter-spacing:.03em}
+.tier b{font-size:17px}
+.tier small{font-size:11px;color:var(--txt2)}
+.tier.best{border-color:var(--ok);background:rgba(22,163,74,.08);box-shadow:inset 0 0 0 1px rgba(22,163,74,.35)}
+.tier.best .tl{color:#15803d}
 .online-row{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
 .online-chip{font-size:11px;background:rgba(22,163,74,.12);color:#15803d;padding:3px 8px;border-radius:20px;font-weight:600}
 .dash{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
@@ -1227,6 +1241,7 @@ async function loadSettings(){
   const set=(id,val)=>{const e=document.getElementById(id);if(e&&val!=null)e.value=val;};
   set('sElec',v.elec);set('sPower',v.power);set('sKlima',v.klima);set('sLabor',v.labor);set('sDesign',v.design);set('sRent',v.rent);set('sWater',v.water);set('sNet',v.net);set('sFixed',v.fixed);set('sParts',v.parts);set('sFail',v.fail);set('sMargin',v.margin);
   set('sScanAmort',v.scanAmort);set('sShopAmort',v.shopAmort);set('sAmortMonths',v.amortMonths);set('sQtyDisc',v.qtyDisc);set('sMarket',v.market);
+  set('sFinMat',v.finMat);set('sFinMin',v.finMin);set('sGoodDisc',v.goodDisc);set('sPerfPrem',v.perfPrem);
   set('sSoftware',v.software);set('sMarketing',v.marketing);set('sAd',v.ad);set('sTax',v.tax);set('sAccount',v.account);set('sCargo',v.cargo);set('sPackage',v.pkg);
   // Malzeme listesi: kayıtlı özel türleri geri yükle + fiyatları uygula
   if(Array.isArray(v.matList)&&v.matList.length){MAT=v.matList.map(m=>({...m}));}
@@ -1235,7 +1250,7 @@ async function loadSettings(){
 }
 async function saveSettings(){
   const materials={};MAT.forEach(m=>materials[m.name]=m.price);
-  const value={elec:num('sElec'),power:num('sPower'),klima:num('sKlima'),labor:num('sLabor'),design:num('sDesign'),rent:num('sRent'),water:num('sWater'),net:num('sNet'),fixed:num('sFixed'),parts:num('sParts'),fail:num('sFail'),margin:num('sMargin'),scanAmort:num('sScanAmort'),shopAmort:num('sShopAmort'),amortMonths:num('sAmortMonths'),qtyDisc:num('sQtyDisc'),market:num('sMarket'),software:num('sSoftware'),marketing:num('sMarketing'),ad:num('sAd'),tax:num('sTax'),account:num('sAccount'),cargo:num('sCargo'),pkg:num('sPackage'),materials,matList:MAT};
+  const value={elec:num('sElec'),power:num('sPower'),klima:num('sKlima'),labor:num('sLabor'),design:num('sDesign'),rent:num('sRent'),water:num('sWater'),net:num('sNet'),fixed:num('sFixed'),parts:num('sParts'),fail:num('sFail'),margin:num('sMargin'),scanAmort:num('sScanAmort'),shopAmort:num('sShopAmort'),amortMonths:num('sAmortMonths'),qtyDisc:num('sQtyDisc'),market:num('sMarket'),finMat:num('sFinMat'),finMin:num('sFinMin'),goodDisc:num('sGoodDisc'),perfPrem:num('sPerfPrem'),software:num('sSoftware'),marketing:num('sMarketing'),ad:num('sAd'),tax:num('sTax'),account:num('sAccount'),cargo:num('sCargo'),pkg:num('sPackage'),materials,matList:MAT};
   const {error}=await sb.from('app_settings').upsert({key:'pricing',value:value,updated_by:DISPLAY[active],updated_at:new Date().toISOString()},{onConflict:'key'});
   if(error){toast("⚠️ Kaydedilemedi");return;}toast("💾 Ayarlar kaydedildi");
 }
@@ -1287,7 +1302,9 @@ function settings(){const parts=Math.max(1,num('sParts'));const months=Math.max(
   const scanPerPart=((num('sScanAmort')||0)/months)/parts;
   return{elec:num('sElec'),power:num('sPower'),klima:num('sKlima'),labor:num('sLabor'),design:num('sDesign'),
     fail:num('sFail')/100,margin:num('sMargin')/100,overPerPart:monthlyFixed/parts,scanPerPart,
-    qtyDisc:(num('sQtyDisc')||0)/100,market:(num('sMarket')||0)/100};}
+    qtyDisc:(num('sQtyDisc')||0)/100,market:(num('sMarket')||0)/100,
+    finMat:num('sFinMat'),finMin:num('sFinMin'),
+    goodDisc:(num('sGoodDisc')||0)/100,perfPrem:(num('sPerfPrem')||0)/100};}
 
 function calcMaterial(m,inp,st,pr,job){
   const filament=(inp.gram/1000)*m.price;
@@ -1301,9 +1318,19 @@ function calcMaterial(m,inp,st,pr,job){
   unit=unit*(1+st.fail)+st.overPerPart;
   if(inp.scan)unit+=st.scanPerPart;
   const disc=Math.min(st.qtyDisc||0,inp.qty*0.002);
-  let price=unit*(1+st.margin)*(1-disc);
-  if(inp.custType==='market')price*=(1+st.market);              // pazaryeri komisyonu
-  return{cost:unit,price,total:price*inp.qty,filament,elec:printElec+acElec,amort,labor:laborCost,disc};
+  let sale=unit*(1+st.margin)*(1-disc);                          // "Çok İyi" satış (adet başı)
+  if(inp.custType==='market')sale*=(1+st.market);                // pazaryeri komisyonu
+  if(inp.color)sale*=1.12;                                       // renk purge firesi tüm kademelere
+  const finishing=(st.finMat||0)+((st.finMin||0)/60)*st.labor;   // adet başı rötuş (aseton/zımpara+işçilik)
+  const iyi=sale*(1-(st.goodDisc||0));
+  const cokiyi=sale;
+  const mukemmel=(sale+finishing)*(1+(st.perfPrem||0));
+  const tiers={
+    iyi:{price:iyi,total:iyi*inp.qty},
+    cokiyi:{price:cokiyi,total:cokiyi*inp.qty},
+    mukemmel:{price:mukemmel,total:mukemmel*inp.qty}
+  };
+  return{cost:unit,price:cokiyi,total:cokiyi*inp.qty,tiers,finishing,filament,elec:printElec+acElec,amort,labor:laborCost,disc};
 }
 let lastCalc=null;
 function calc(){
@@ -1325,29 +1352,42 @@ function calc(){
     custType:document.getElementById('cCustType').value,
     colors:document.getElementById('cColor').value==='1'?pickedColors():[]};
   let rows=MAT.map(m=>({m,r:calcMaterial(m,inp,st,pr,job)}));
-  if(inp.color)rows.forEach(x=>{x.r.total*=1.12;x.r.price*=1.12;});   // renk purge firesi
-  rows.sort((a,b)=>a.r.total-b.r.total);lastCalc={rows,inp,pr,job};
+  rows.sort((a,b)=>a.r.tiers.cokiyi.total-b.r.tiers.cokiyi.total);lastCalc={rows,inp,pr,job};
   // toplam makine-saati / duvar saati (bilgi)
   const totalMachineH=job.printH*qty;const wallH=totalMachineH/machinesUsed;
   const custTxt=inp.custType==='market'?'🛒 Pazarlama':'👤 Kendi müşteri';
   const colTxt=inp.color?(inp.colors.length?'· 🎨 '+inp.colors.join('/'):'· 🎨 renkli'):'';
   document.getElementById('rMeta').innerHTML=`🖨️ ${pr.name} · ⚖️ ${inp.gram} g · ⏱️ ${fmtHMS(job.printH*3600)}/adet · 🔢 ${qty} adet · 🔲 ${perPlate}/tabla · ${platesNeeded} tabla · ${machinesUsed} makine ~${fmtHMS(wallH*3600)} ${colTxt} · ${custTxt}${rows[0].r.disc>0?` · 💸 %${Math.round(rows[0].r.disc*100)} adet ind.`:''}`;
   const oe=document.getElementById('rOpts');oe.innerHTML="";
-  rows.forEach((x,i)=>{const d=document.createElement('div');d.className="ropt"+(i===0?" recommend":"");
-    d.innerHTML=`<div class="ml">${x.m.emoji} ${x.m.name} ${i===0?'<span style="color:var(--ok);font-size:11px">✓ en uygun</span>':''}<small>adet başı ${fmt(x.r.price)} ₺</small></div><div class="pr">${fmt(x.r.total)} ₺</div>`;oe.appendChild(d);});
+  rows.forEach((x,i)=>{const t=x.r.tiers;const d=document.createElement('div');d.className="ropt tierbox"+(i===0?" recommend":"");
+    d.innerHTML=`<div class="ml">${x.m.emoji} ${x.m.name} ${i===0?'<span style="color:var(--ok);font-size:11px">✓ en uygun malzeme</span>':''}</div>
+      <div class="tiers">
+        <div class="tier"><span class="tl">İyi</span><b>${fmt(t.iyi.total)} ₺</b><small>adet ${fmt(t.iyi.price)} ₺</small></div>
+        <div class="tier best"><span class="tl">Çok İyi ⭐</span><b>${fmt(t.cokiyi.total)} ₺</b><small>adet ${fmt(t.cokiyi.price)} ₺</small></div>
+        <div class="tier"><span class="tl">Mükemmel</span><b>${fmt(t.mukemmel.total)} ₺</b><small>adet ${fmt(t.mukemmel.price)} ₺</small></div>
+      </div>`;oe.appendChild(d);});
   const b=rows[0];
-  document.getElementById('rBreak').innerHTML=`<b>Maliyet (${b.m.name}, adet başı):</b> 🧵 ${fmt(b.r.filament)} · ⚡ ${fmt(b.r.elec)} · 🧰 ${fmt(b.r.labor)} · 🖨️ ${fmt(b.r.amort)} ₺ + gider/fire.<br>💡 ${suggest(inp)}`;
+  document.getElementById('rBreak').innerHTML=`<b>Maliyet (${b.m.name}, adet başı):</b> 🧵 ${fmt(b.r.filament)} · ⚡ ${fmt(b.r.elec)} · 🧰 ${fmt(b.r.labor)} · 🖨️ ${fmt(b.r.amort)} ₺ + gider/fire.<br>🎚️ <b>İyi</b> standart bitiş (−%${Math.round((st.goodDisc||0)*100)}) · <b>Çok İyi</b> önerilen (dengeli, en kârlı) · <b>Mükemmel</b> aseton/zımpara el işçiliği +rötuş ${fmt(b.r.finishing)} ₺/adet, +%${Math.round((st.perfPrem||0)*100)} prim.<br>💡 ${suggest(inp)}`;
   quoteTab('result');
 }
 function suggest(inp){return inp.color?"Renkli baskıda K2 en verimli. Görsel ürün PLA, dayanıklı iş PETG.":"İç mekan dekoratif için PLA en ekonomik; kafe/dış mekan & sık kullanılan parçalar PETG; güneş gören ürünler için ASA.";}
 
 /* ====== Teklif sun (mail + WhatsApp) ====== */
 function offerTexts(){
-  const top=lastCalc.rows.slice(0,3);const q=lastCalc.inp.qty;
-  const mailMsg=`Merhaba,\n\nTalebiniz için fiyat seçeneklerimiz (${q} adet):\n`+
-    top.map(x=>`• ${x.m.name}: ${fmt(x.r.total)} ₺  (adet başı ${fmt(x.r.price)} ₺)`).join("\n")+
-    `\n\nMalzeme farkı: PLA ekonomik ve dekoratif işler için, PETG daha dayanıklı kullanım içindir. Sizin için en uygun seçeneği birlikte belirleyebiliriz.\n\nSevgiler,\nOruvian`;
-  const waMsg=`Merhaba 👋 ${q} adet için fiyatlar:\n`+top.map(x=>`${x.m.emoji} ${x.m.name}: ${fmt(x.r.total)} ₺`).join("\n")+`\n\nPLA ekonomik, PETG daha dayanıklı. Hangisini istersiniz? 🙂\nOruvian`;
+  const q=lastCalc.inp.qty;const b=lastCalc.rows[0];const t=b.r.tiers;
+  const mailMsg=`Merhaba,\n\n${q} adet talebiniz için kalite seçeneklerimiz:\n\n`+
+    `• İyi — ${fmt(t.iyi.total)} ₺ (adet ${fmt(t.iyi.price)} ₺)\n`+
+    `   Standart baskı: sağlam ve işlevsel, yüzeyde hafif katman izleri olabilir. Bütçe dostu seçim.\n\n`+
+    `• Çok İyi — ${fmt(t.cokiyi.total)} ₺ (adet ${fmt(t.cokiyi.price)} ₺)  ⭐ ÖNERİLEN\n`+
+    `   İnce katmanlı, temiz ve düzgün yüzey. Kalite/fiyat dengesi en iyi seçenek.\n\n`+
+    `• Mükemmel — ${fmt(t.mukemmel.total)} ₺ (adet ${fmt(t.mukemmel.price)} ₺)\n`+
+    `   Elde işlenmiş premium bitiş: aseton/zımpara ile pürüzsüz yüzey, sergilik kalite.\n\n`+
+    `Fiyatlar KDV dahildir. Sizin için en uygun seçeneği birlikte belirleyebiliriz.\n\nSevgiler,\nOruvian`;
+  const waMsg=`Merhaba 👋 ${q} adet için kalite seçenekleri:\n\n`+
+    `🟢 İyi: ${fmt(t.iyi.total)} ₺ — standart, işlevsel bitiş\n`+
+    `⭐ Çok İyi: ${fmt(t.cokiyi.total)} ₺ — temiz yüzey, önerilen\n`+
+    `💎 Mükemmel: ${fmt(t.mukemmel.total)} ₺ — el işçiliğiyle pürüzsüz premium\n\n`+
+    `Hangisini istersiniz? 🙂 (KDV dahil)\nOruvian`;
   return{mailMsg,waMsg};
 }
 function openOffer(){if(!lastCalc)return;const{mailMsg,waMsg}=offerTexts();
@@ -1437,7 +1477,13 @@ function quotePdf(){
   const val=new Date(today);val.setDate(val.getDate()+15);
   const prodSel=document.getElementById('cProd');
   const prodName=prodSel&&prodSel.value?(PRODCACHE.find(x=>String(x.id)===prodSel.value)?.name||'3D baskı ürün'):'3D baskı ürün';
-  const trs=top.map((x,i)=>`<tr${i===0?' class="rec"':''}><td>${x.m.name}${i===0?' <span class="tag">Önerilen</span>':''}</td><td>${inp.qty}</td><td>${fmt(x.r.price)} ₺</td><td><b>${fmt(x.r.total)} ₺</b></td></tr>`).join('');
+  const b=rows[0];const t=b.r.tiers;
+  const tierRows=[
+    {n:'İyi',d:'Standart bitiş — sağlam, işlevsel',v:t.iyi},
+    {n:'Çok İyi',d:'İnce katman, temiz yüzey — önerilen',v:t.cokiyi,rec:true},
+    {n:'Mükemmel',d:'Aseton/zımpara el işçiliği, premium bitiş',v:t.mukemmel}
+  ];
+  const trs=tierRows.map(x=>`<tr${x.rec?' class="rec"':''}><td>${x.n}${x.rec?' <span class="tag">Önerilen</span>':''}<br><span style="font-size:10.5px;color:#888">${x.d}</span></td><td>${inp.qty}</td><td>${fmt(x.v.price)} ₺</td><td><b>${fmt(x.v.total)} ₺</b></td></tr>`).join('');
   const w=window.open('','_blank');
   w.document.write(`<!DOCTYPE html><html lang="tr"><head><meta charset="utf-8"><title>Teklif ${no}</title><style>
     *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,sans-serif}
@@ -1459,10 +1505,10 @@ function quotePdf(){
     <div class="top"><div class="logo">ORUVIAN<small>3D BASKI ÇÖZÜMLERİ</small></div>
     <div class="meta"><b>FİYAT TEKLİFİ</b><br>Teklif No: ${no}<br>Tarih: ${today.toLocaleDateString('tr-TR')}<br>Geçerlilik: ${val.toLocaleDateString('tr-TR')}</div></div>
     <h2>Sayın Yetkili,</h2>
-    <p class="info">Talebiniz doğrultusunda hazırladığımız fiyat teklifimiz aşağıdadır. Malzeme seçenekleri kullanım amacına göre sunulmuştur.</p>
-    <table><tr><th>ÜRÜN / MALZEME</th><th>ADET</th><th>BİRİM FİYAT</th><th>TOPLAM</th></tr>
-    <tr><td colspan="4" style="font-weight:600;background:#fafafa">${escapeHtml(prodName)} — ${inp.qty} adet</td></tr>${trs}</table>
-    <div class="terms"><b>Koşullar</b><br>• Fiyatlara KDV dahil değildir. • Teslim süresi sipariş onayından itibaren netleştirilir. • PLA dekoratif ve ekonomik kullanım, PETG dayanıklı kullanım içindir. • Teklif belirtilen tarihe kadar geçerlidir.</div>
+    <p class="info">Talebiniz doğrultusunda hazırladığımız fiyat teklifimiz aşağıdadır. Kalite kademeleri kullanım amacına göre sunulmuştur.</p>
+    <table><tr><th>KALİTE KADEMESİ</th><th>ADET</th><th>BİRİM FİYAT</th><th>TOPLAM</th></tr>
+    <tr><td colspan="4" style="font-weight:600;background:#fafafa">${escapeHtml(prodName)} · ${b.m.emoji} ${b.m.name} — ${inp.qty} adet</td></tr>${trs}</table>
+    <div class="terms"><b>Kalite kademeleri</b><br>• <b>İyi:</b> standart baskı, sağlam ve işlevsel; yüzeyde hafif katman izleri olabilir. • <b>Çok İyi:</b> ince katmanlı, temiz ve düzgün yüzey — kalite/fiyat dengesi en iyi seçenek. • <b>Mükemmel:</b> aseton/zımpara ile elde işlenmiş pürüzsüz premium bitiş.<br><br><b>Koşullar</b><br>• Fiyatlara KDV dahildir. • Teslim süresi sipariş onayından itibaren netleştirilir. • Teklif belirtilen tarihe kadar geçerlidir.</div>
     <div class="foot"><span>Oruvian · oruvian.com</span><span>info@oruvian.com</span></div>
     <script>window.onload=()=>setTimeout(()=>window.print(),300)<\/script></body></html>`);
   w.document.close();
