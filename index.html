@@ -32,6 +32,7 @@
   input,select,textarea{font-family:inherit;font-size:14px;padding:10px 12px;border:1px solid var(--line);
     border-radius:12px;background:rgba(255,255,255,.78);width:100%;color:var(--txt)}
   input:focus,select:focus,textarea:focus{outline:2px solid #6366f1;outline-offset:1px}
+  input[type=checkbox],input[type=radio]{width:auto;padding:0;margin:0;flex:0 0 auto}
   label{font-size:12px;color:var(--txt2);display:block;margin-bottom:4px}
   .hide{display:none!important}
   .topbar{position:sticky;top:0;z-index:30;display:flex;align-items:center;justify-content:space-between;
@@ -609,12 +610,17 @@ m193 -380 c-10 -87 -79 -140 -152 -116 -37 12 -46 26 -46 71 0 38 29 66 77 74
 .tierbox .ml{margin-bottom:8px;font-weight:600}
 .tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 @media(max-width:520px){.tiers{grid-template-columns:1fr}}
-.tier{border:1px solid var(--line);border-radius:12px;padding:10px;text-align:center;display:flex;flex-direction:column;gap:2px}
-.tier .tl{font-size:11px;color:var(--txt2);font-weight:600;text-transform:uppercase;letter-spacing:.03em}
-.tier b{font-size:17px}
-.tier small{font-size:11px;color:var(--txt2)}
+.tier{border:1px solid var(--line);border-radius:14px;padding:12px 10px;text-align:center;display:flex;flex-direction:column;gap:8px}
+.tier .tl{font-size:11px;color:var(--txt2);font-weight:700;text-transform:uppercase;letter-spacing:.03em}
+.tier .tp{display:flex;flex-direction:column;gap:1px}
+.tier .tp small{font-size:10px;color:var(--txt2);text-transform:uppercase;letter-spacing:.03em}
+.tier .tp b{font-size:19px;line-height:1.1;font-weight:800}
+.tier .tp.tot{padding-top:6px;border-top:1px dashed var(--line)}
+.tier .tp.tot b{font-size:15px;font-weight:700;color:var(--txt2)}
 .tier.best{border-color:var(--ok);background:rgba(22,163,74,.08);box-shadow:inset 0 0 0 1px rgba(22,163,74,.35)}
 .tier.best .tl{color:#15803d}
+.tier.best .tp b{color:#15803d}
+.tier.best .tp.tot b{color:#15803d;opacity:.75}
 .online-row{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
 .online-chip{font-size:11px;background:rgba(22,163,74,.12);color:#15803d;padding:3px 8px;border-radius:20px;font-weight:600}
 .dash{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
@@ -622,10 +628,12 @@ m193 -380 c-10 -87 -79 -140 -152 -116 -37 12 -46 26 -46 71 0 38 29 66 77 74
 .dash .dcard small{font-size:11px;color:var(--txt2);text-transform:uppercase;letter-spacing:.04em}
 .dash .dcard .dn{font-size:22px;font-weight:700;margin-top:2px}
 .dash .dcard.warn{box-shadow:inset 0 0 0 1px rgba(220,38,38,.35)}
-.todo{display:flex;align-items:flex-start;gap:8px;padding:9px 4px;border-bottom:1px solid var(--line)}
+.todo{display:flex;align-items:flex-start;gap:10px;padding:10px 4px;border-bottom:1px solid var(--line)}
 .todo:last-child{border-bottom:none}
-.todo .tx{flex:1;font-size:13px}
-.todo .due{font-size:11px;color:var(--txt2)}
+.todo>input[type=checkbox]{width:18px;height:18px;margin-top:2px}
+.todo .tx{flex:1 1 auto;min-width:0;font-size:13px;word-break:break-word}
+.todo .tacts{flex:0 0 auto;display:flex;gap:6px;align-items:flex-start}
+.todo .due{font-size:11px;color:var(--txt2);margin-top:3px}
 .todo.urgent .due{color:#dc2626;font-weight:700}
 .todo.done .tx{text-decoration:line-through;color:var(--txt2)}
 .todo .tbtn{font-size:11px;padding:4px 8px;border-radius:8px;border:1px solid var(--line);background:transparent;cursor:pointer}
@@ -1362,9 +1370,15 @@ function calc(){
   rows.forEach((x,i)=>{const t=x.r.tiers;const d=document.createElement('div');d.className="ropt tierbox"+(i===0?" recommend":"");
     d.innerHTML=`<div class="ml">${x.m.emoji} ${x.m.name} ${i===0?'<span style="color:var(--ok);font-size:11px">✓ en uygun malzeme</span>':''}</div>
       <div class="tiers">
-        <div class="tier"><span class="tl">İyi</span><b>${fmt(t.iyi.total)} ₺</b><small>adet ${fmt(t.iyi.price)} ₺</small></div>
-        <div class="tier best"><span class="tl">Çok İyi ⭐</span><b>${fmt(t.cokiyi.total)} ₺</b><small>adet ${fmt(t.cokiyi.price)} ₺</small></div>
-        <div class="tier"><span class="tl">Mükemmel</span><b>${fmt(t.mukemmel.total)} ₺</b><small>adet ${fmt(t.mukemmel.price)} ₺</small></div>
+        <div class="tier"><span class="tl">İyi</span>
+          <div class="tp"><small>Adet</small><b>${fmt(t.iyi.price)} ₺</b></div>
+          <div class="tp tot"><small>Toplam · ${qty} ad.</small><b>${fmt(t.iyi.total)} ₺</b></div></div>
+        <div class="tier best"><span class="tl">Çok İyi ⭐ Önerilen</span>
+          <div class="tp"><small>Adet</small><b>${fmt(t.cokiyi.price)} ₺</b></div>
+          <div class="tp tot"><small>Toplam · ${qty} ad.</small><b>${fmt(t.cokiyi.total)} ₺</b></div></div>
+        <div class="tier"><span class="tl">Mükemmel</span>
+          <div class="tp"><small>Adet</small><b>${fmt(t.mukemmel.price)} ₺</b></div>
+          <div class="tp tot"><small>Toplam · ${qty} ad.</small><b>${fmt(t.mukemmel.total)} ₺</b></div></div>
       </div>`;oe.appendChild(d);});
   const b=rows[0];
   document.getElementById('rBreak').innerHTML=`<b>Maliyet (${b.m.name}, adet başı):</b> 🧵 ${fmt(b.r.filament)} · ⚡ ${fmt(b.r.elec)} · 🧰 ${fmt(b.r.labor)} · 🖨️ ${fmt(b.r.amort)} ₺ + gider/fire.<br>🎚️ <b>İyi</b> standart bitiş (−%${Math.round((st.goodDisc||0)*100)}) · <b>Çok İyi</b> önerilen (dengeli, en kârlı) · <b>Mükemmel</b> aseton/zımpara el işçiliği +rötuş ${fmt(b.r.finishing)} ₺/adet, +%${Math.round((st.perfPrem||0)*100)} prim.<br>💡 ${suggest(inp)}`;
@@ -1738,7 +1752,7 @@ async function renderTodos(){
       <div class="tx"><span class="td-badge pr-${pr}">${pr.toUpperCase()}</span>${escapeHtml(t.title||t.body||'-')}
         ${t.descr?`<div style="font-size:11.5px;color:var(--txt2);margin-top:2px">${escapeHtml(t.descr)}</div>`:''}
         <div class="due">${meta} · ${escapeHtml(t.created_by||'')}</div></div>
-      <div style="display:flex;flex-direction:column;gap:4px">
+      <div class="tacts">
         <button class="tbtn" onclick="editTodo(${t.id})">✏️</button>
         ${done?`<button class="tbtn" onclick="archiveTodo(${t.id},${t.archived?'false':'true'})">${t.archived?'↩️':'🗄️'}</button>`:''}
         <button class="tbtn" onclick="askDelete('todos',${t.id},'${escapeHtml(t.title||t.body||'').replace(/'/g,'')}','renderTodos')">🗑️</button>
