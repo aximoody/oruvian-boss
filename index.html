@@ -139,6 +139,12 @@
   .socbtn .ic{font-size:24px}.socbtn b{display:block;margin-top:6px;font-size:14px}
   /* quote */
   .calc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+  .set-h{font-size:12px;font-weight:700;color:var(--txt2);text-transform:uppercase;letter-spacing:.04em;margin:16px 0 8px;padding-bottom:5px;border-bottom:1px solid var(--line)}
+  .set-h:first-of-type{margin-top:6px}
+  .kasa-net{display:flex;justify-content:space-between;align-items:flex-end;gap:10px;padding:14px 18px;margin-bottom:10px;background:linear-gradient(135deg,rgba(22,163,74,.12),rgba(16,185,129,.06))}
+  .kasa-net small{font-size:11px;color:var(--txt2);font-weight:700;letter-spacing:.03em}
+  .kasa-net .n{font-size:26px;font-weight:800;line-height:1.1;margin-top:2px}
+  .kasa-net .knsub{font-size:11px;color:var(--txt2);text-align:right}
   .help{display:inline-grid;place-items:center;width:16px;height:16px;border-radius:50%;background:rgba(37,99,235,.14);color:#1d4ed8;font-size:11px;font-weight:700;cursor:pointer;border:none}
   .matrow{display:flex;justify-content:space-between;align-items:center;padding:11px 14px;border-bottom:1px solid var(--line)}
   .matrow:last-child{border-bottom:none}.matrow .nm{font-weight:600;font-size:13px;display:flex;align-items:center;gap:8px}.matrow input{width:120px}
@@ -374,6 +380,7 @@ m193 -380 c-10 -87 -79 -140 -152 -116 -37 12 -46 26 -46 71 0 38 29 66 77 74
       <!-- KASA -->
       <div id="sp-kasa" class="hide">
         <div class="page-h" style="margin-top:14px"><span style="font-size:13px;color:var(--txt2)">Kasa · gelir/gider</span><span class="meta-upd" id="upd-kasa"></span></div>
+        <div class="glass kasa-net" id="kasaNet"><div><small>💰 KASADAKİ PARA · NET BAKİYE</small><div class="n" id="kNet">0 ₺</div></div><div class="knsub"><span id="kNetIn">+0</span> gelir · <span id="kNetOut">−0</span> gider (tüm zaman, aktif kayıtlar)</div></div>
         <div class="kasa-top">
           <div class="glass stat"><small id="kInL">GELİR · BUGÜN</small><div class="n" style="color:var(--ok)" id="kIn">0 ₺</div></div>
           <div class="glass stat"><small id="kOutL">GİDER · BUGÜN</small><div class="n" style="color:var(--bad)" id="kOut">0 ₺</div></div>
@@ -467,8 +474,11 @@ m193 -380 c-10 -87 -79 -140 -152 -116 -37 12 -46 26 -46 71 0 38 29 66 77 74
       <div id="q-result" class="hide">
         <div class="page-h" style="margin-top:14px"><button class="back" onclick="quoteTab('hesap')">← Hesaplama</button><h2 style="font-size:17px">📄 Fiyat sayfası</h2></div>
         <div class="glass resultcard">
+          <div id="rNote" class="rnote"></div>
           <div style="font-size:12px;color:var(--txt2);margin-bottom:10px" id="rMeta"></div>
           <div id="rOpts"></div>
+          <div id="rProfit"></div>
+          <div id="rMatrix"></div>
           <div class="break" id="rBreak"></div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px">
             <button class="btn" style="flex:1" onclick="openOffer()">📤 Teklifi sun</button>
@@ -486,38 +496,51 @@ m193 -380 c-10 -87 -79 -140 -152 -116 -37 12 -46 26 -46 71 0 38 29 66 77 74
         </div>
         <div class="glass card" style="margin-top:14px">
           <h3 style="margin:0 0 4px;font-size:15px">🎛️ Hesap kontrol paneli</h3>
-          <p style="font-size:12px;color:var(--txt2);margin:0 0 12px">Yazıcı bilgileri Yazıcılar bölümünden çekilir — burada tekrar girilmez.</p>
+          <p style="font-size:12px;color:var(--txt2);margin:0 0 4px">Yazıcı gücü/bakımı artık <b>Yazıcılar → ⚙️ Düzenle</b> bölümünden her yazıcı için ayrı girilir.</p>
+
+          <div class="set-h">⚡ Enerji & işçilik</div>
           <div class="calc-grid">
             <div><label>⚡ Elektrik (₺/kWh)</label><input id="sElec" type="number" value="4.5"></div>
-            <div><label>🔌 Yazıcı gücü varsayılan (kW)</label><input id="sPower" type="number" value="0.2"></div>
             <div><label>❄️ Klima gücü (kW)</label><input id="sKlima" type="number" value="1.2"></div>
             <div><label>🧰 İşçilik (₺/saat)</label><input id="sLabor" type="number" value="150"></div>
             <div><label>✏️ Çizim (₺/saat)</label><input id="sDesign" type="number" value="200"></div>
-            <div><label>🏠 Aylık kira (₺)</label><input id="sRent" type="number" value="15000"></div>
+          </div>
+
+          <div class="set-h">🏠 Aylık sabit giderler</div>
+          <div class="calc-grid">
+            <div><label>🏠 Dükkan kirası (₺/ay)</label><input id="sRent" type="number" value="15000"></div>
             <div><label>💧 Su (₺/ay)</label><input id="sWater" type="number" value="800"></div>
             <div><label>🌐 İnternet (₺/ay)</label><input id="sNet" type="number" value="600"></div>
+            <div><label>📚 Muhasebe (₺/ay)</label><input id="sAccount" type="number" value="0"></div>
             <div><label>💻 Yazılım abonelikleri (₺/ay)</label><input id="sSoftware" type="number" value="0"></div>
             <div><label>📣 Satış/Pazarlama (₺/ay)</label><input id="sMarketing" type="number" value="0"></div>
             <div><label>📢 Reklam (₺/ay)</label><input id="sAd" type="number" value="0"></div>
             <div><label>🧾 Vergi (₺/ay)</label><input id="sTax" type="number" value="0"></div>
-            <div><label>📚 Muhasebe (₺/ay)</label><input id="sAccount" type="number" value="0"></div>
             <div><label>🚚 Kargo (₺/ay)</label><input id="sCargo" type="number" value="0"></div>
             <div><label>📦 Ambalaj (₺/ay)</label><input id="sPackage" type="number" value="0"></div>
             <div><label>📦 Diğer sabit gider (₺/ay)</label><input id="sFixed" type="number" value="2000"></div>
             <div><label>🔁 Aylık tahmini parça</label><input id="sParts" type="number" value="400"></div>
-            <div><label>♻️ Fire (%)</label><input id="sFail" type="number" value="5"></div>
-            <div><label>📈 Kâr marjı (%)</label><input id="sMargin" type="number" value="100"></div>
-            <div><label>💸 Adet indirimi max (%)</label><input id="sQtyDisc" type="number" value="20"></div>
-            <div><label>🛒 Pazaryeri komisyonu (%)</label><input id="sMarket" type="number" value="20"></div>
-            <div><label>🪣 Rötuş malzeme /adet (aseton, zımpara ₺)</label><input id="sFinMat" type="number" value="15"></div>
-            <div><label>🖐️ Rötuş işçilik /adet (dk)</label><input id="sFinMin" type="number" value="8"></div>
-            <div><label>🎚️ İyi kademe indirimi (%)</label><input id="sGoodDisc" type="number" value="15"></div>
-            <div><label>💎 Mükemmel prim (%)</label><input id="sPerfPrem" type="number" value="15"></div>
+          </div>
+
+          <div class="set-h">📉 Amortisman</div>
+          <div class="calc-grid">
             <div><label>🖨️ Tarayıcı amortismanı (₺)</label><input id="sScanAmort" type="number" value="30000"></div>
             <div><label>🏪 Dükkan amortismanı (₺)</label><input id="sShopAmort" type="number" value="60000"></div>
             <div><label>📆 Amortisman süresi (ay)</label><input id="sAmortMonths" type="number" value="36"></div>
           </div>
-          <p style="font-size:11px;color:var(--txt2);margin:10px 0 0">Aylık sabit giderler (kira, su, internet, pazarlama, reklam, vergi, muhasebe, kargo, ambalaj, yazılım) + yazıcıların aylık bakımı aylık parça sayısına bölünüp birim maliyete eklenir. Klima elektriği, işi kaç makinenin paralel çalıştığına göre ürünlere yayılır. Pazaryeri komisyonu yalnızca müşteri tipi "Pazarlama" seçilince fiyata eklenir.</p>
+
+          <div class="set-h">📈 Fiyatlandırma & kademeler</div>
+          <div class="calc-grid">
+            <div><label>📈 Kâr marjı (%) — 1 adet</label><input id="sMargin" type="number" value="100"></div>
+            <div><label>♻️ Fire (%)</label><input id="sFail" type="number" value="5"></div>
+            <div><label>🛒 Pazaryeri komisyonu (%)</label><input id="sMarket" type="number" value="20"></div>
+            <div><label>🎚️ İyi kademe indirimi (%)</label><input id="sGoodDisc" type="number" value="15"></div>
+            <div><label>💎 Mükemmel prim (%)</label><input id="sPerfPrem" type="number" value="15"></div>
+            <div><label>🪣 Rötuş malzeme /adet (aseton, zımpara ₺)</label><input id="sFinMat" type="number" value="15"></div>
+            <div><label>🖐️ Rötuş işçilik /adet (dk)</label><input id="sFinMin" type="number" value="8"></div>
+            <input id="sQtyDisc" type="hidden" value="20">
+          </div>
+          <p style="font-size:11px;color:var(--txt2);margin:10px 0 0">Sabit giderler + yazıcıların aylık bakımı, aylık parça sayısına bölünüp birim maliyete eklenir. Klima elektriği işi kaç makinenin paralel çalıştığına göre yayılır. <b>Kâr marjı 1 adet için geçerlidir; adet arttıkça B2B kademesiyle otomatik düşer</b> (10→%85, 100→%62, 1000→%36 …). Pazaryeri komisyonu yalnızca müşteri tipi "Pazarlama" seçilince eklenir.</p>
           <button class="btn sm" style="margin-top:14px" onclick="saveSettings()">💾 Ayarları kaydet</button>
         </div>
       </div>
@@ -621,6 +644,25 @@ m193 -380 c-10 -87 -79 -140 -152 -116 -37 12 -46 26 -46 71 0 38 29 66 77 74
 .tier.best .tl{color:#15803d}
 .tier.best .tp b{color:#15803d}
 .tier.best .tp.tot b{color:#15803d;opacity:.75}
+.rnote{font-size:12.5px;line-height:1.6;color:var(--txt);background:rgba(99,102,241,.07);border:1px solid rgba(99,102,241,.18);border-radius:12px;padding:12px 14px;margin-bottom:12px}
+.profitbox{margin-top:14px;border:1px dashed #d1a054;background:rgba(234,179,8,.08);border-radius:14px;padding:12px 14px}
+.profitbox .pbh{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.profitbox .ib{font-size:10.5px;color:var(--txt2);text-transform:uppercase;letter-spacing:.03em}
+.profitbox .prow{display:flex;align-items:baseline;gap:8px;padding:4px 0;border-bottom:1px solid rgba(0,0,0,.05)}
+.profitbox .prow span{flex:0 0 78px;font-size:12px;color:var(--txt2);font-weight:600}
+.profitbox .prow b{flex:1;font-size:15px}
+.profitbox .prow small{font-size:11px;color:var(--txt2)}
+.profitbox .prow.best b{color:#b45309}
+.profitbox .pnote{display:block;margin-top:8px;font-size:11px;color:var(--txt2)}
+.matrix{margin-top:14px}
+.matrix .mxh{font-size:13px;font-weight:700;margin-bottom:8px}
+.matrix .mxh small{font-weight:400;color:var(--txt2)}
+.mxt{width:100%;border-collapse:collapse;font-size:13px}
+.mxt th{text-align:right;font-size:11px;color:var(--txt2);font-weight:600;padding:7px 8px;border-bottom:2px solid var(--line);text-transform:uppercase;letter-spacing:.02em}
+.mxt th:first-child,.mxt td:first-child{text-align:left}
+.mxt td{text-align:right;padding:8px;border-bottom:1px solid var(--line)}
+.mxt td.mc{font-weight:800;color:#15803d;background:rgba(22,163,74,.06)}
+.mxt th:nth-child(3){color:#15803d}
 .online-row{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
 .online-chip{font-size:11px;background:rgba(22,163,74,.12);color:#15803d;padding:3px 8px;border-radius:20px;font-weight:600}
 .dash{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
@@ -1107,9 +1149,10 @@ async function renderKasa(){
   const {data,error}=await sb.from('kasa').select('*').is('deleted_at',null).order('tdate',{ascending:false}).order('id',{ascending:false});
   if(error){el.innerHTML="<div style='padding:12px;font-size:12px;color:var(--bad)'>Kasa yüklenemedi.</div>";return;}
   const start=periodStart(kPeriod);
-  let inS=0,outS=0,devir=0;el.innerHTML="";
+  let inS=0,outS=0,devir=0,allIn=0,allOut=0;el.innerHTML="";
   data.forEach(k=>{
     const amt=Number(k.amount);
+    if(!k.passive){if(k.type==='in')allIn+=amt;else allOut+=amt;}   // tüm zaman net bakiye
     const inPeriod=kDateOf(k).getTime()>=start;
     if(!k.passive&&!inPeriod)devir+=(k.type==='in'?amt:-amt);
     if(!k.passive&&inPeriod){if(k.type==='in')inS+=amt;else outS+=amt;}
@@ -1132,6 +1175,10 @@ async function renderKasa(){
   document.getElementById('kBalL').textContent="NET · "+PER_LBL[kPeriod];
   document.getElementById('kIn').textContent=fmt(inS)+" ₺";document.getElementById('kOut').textContent=fmt(outS)+" ₺";document.getElementById('kBal').textContent=fmt(inS-outS)+" ₺";
   document.getElementById('kDevir').innerHTML=kPeriod==='all'?'':`Devir ${devir>=0?'+':''}${fmt(devir)} ₺ → Kasa <b>${fmt(devir+inS-outS)} ₺</b>`;
+  const netAll=allIn-allOut;const kn=document.getElementById('kNet');
+  kn.textContent=(netAll>=0?'':'−')+fmt(Math.abs(netAll))+" ₺";kn.style.color=netAll>=0?'var(--ok)':'var(--bad)';
+  document.getElementById('kNetIn').textContent="+"+fmt(allIn);
+  document.getElementById('kNetOut').textContent="−"+fmt(allOut);
 }
 async function addKasa(){const desc=document.getElementById('kDesc').value.trim();const amt=parseFloat(document.getElementById('kAmt').value);const type=document.getElementById('kType').value;
   const tdate=document.getElementById('kDate').value||new Date().toISOString().slice(0,10);
@@ -1258,7 +1305,7 @@ async function loadSettings(){
 }
 async function saveSettings(){
   const materials={};MAT.forEach(m=>materials[m.name]=m.price);
-  const value={elec:num('sElec'),power:num('sPower'),klima:num('sKlima'),labor:num('sLabor'),design:num('sDesign'),rent:num('sRent'),water:num('sWater'),net:num('sNet'),fixed:num('sFixed'),parts:num('sParts'),fail:num('sFail'),margin:num('sMargin'),scanAmort:num('sScanAmort'),shopAmort:num('sShopAmort'),amortMonths:num('sAmortMonths'),qtyDisc:num('sQtyDisc'),market:num('sMarket'),finMat:num('sFinMat'),finMin:num('sFinMin'),goodDisc:num('sGoodDisc'),perfPrem:num('sPerfPrem'),software:num('sSoftware'),marketing:num('sMarketing'),ad:num('sAd'),tax:num('sTax'),account:num('sAccount'),cargo:num('sCargo'),pkg:num('sPackage'),materials,matList:MAT};
+  const value={elec:num('sElec'),klima:num('sKlima'),labor:num('sLabor'),design:num('sDesign'),rent:num('sRent'),water:num('sWater'),net:num('sNet'),fixed:num('sFixed'),parts:num('sParts'),fail:num('sFail'),margin:num('sMargin'),scanAmort:num('sScanAmort'),shopAmort:num('sShopAmort'),amortMonths:num('sAmortMonths'),qtyDisc:num('sQtyDisc'),market:num('sMarket'),finMat:num('sFinMat'),finMin:num('sFinMin'),goodDisc:num('sGoodDisc'),perfPrem:num('sPerfPrem'),software:num('sSoftware'),marketing:num('sMarketing'),ad:num('sAd'),tax:num('sTax'),account:num('sAccount'),cargo:num('sCargo'),pkg:num('sPackage'),materials,matList:MAT};
   const {error}=await sb.from('app_settings').upsert({key:'pricing',value:value,updated_by:DISPLAY[active],updated_at:new Date().toISOString()},{onConflict:'key'});
   if(error){toast("⚠️ Kaydedilemedi");return;}toast("💾 Ayarlar kaydedildi");
 }
@@ -1276,7 +1323,7 @@ function quoteTab(t){['hesap','result','ayar','teklifler','musteri','urun'].forE
   if(t==='teklifler')renderQuotes();
   if(t==='musteri')renderCustomers();
   if(t==='urun')renderProducts();}
-function num(id){return parseFloat(document.getElementById(id).value)||0;}
+function num(id){const e=document.getElementById(id);return e?parseFloat(e.value)||0:0;}
 function parseHMS(v){v=(v==null?'':v).toString().trim();if(!v)return 0;
   if(v.indexOf(':')<0){const f=parseFloat(v);return isNaN(f)?0:f*3600;} // ":" yoksa saat kabul et
   const p=v.split(':').map(x=>parseInt(x,10)||0);while(p.length<3)p.unshift(0);
@@ -1308,38 +1355,52 @@ function settings(){const parts=Math.max(1,num('sParts'));const months=Math.max(
   const monthlyFixed=num('sRent')+num('sWater')+num('sNet')+num('sFixed')+shopMonthly
     +num('sSoftware')+num('sMarketing')+num('sAd')+num('sTax')+num('sAccount')+num('sCargo')+num('sPackage')+maintMonthly;
   const scanPerPart=((num('sScanAmort')||0)/months)/parts;
-  return{elec:num('sElec'),power:num('sPower'),klima:num('sKlima'),labor:num('sLabor'),design:num('sDesign'),
+  return{elec:num('sElec'),power:0.2,klima:num('sKlima'),labor:num('sLabor'),design:num('sDesign'),
     fail:num('sFail')/100,margin:num('sMargin')/100,overPerPart:monthlyFixed/parts,scanPerPart,
     qtyDisc:(num('sQtyDisc')||0)/100,market:(num('sMarket')||0)/100,
     finMat:num('sFinMat'),finMin:num('sFinMin'),
     goodDisc:(num('sGoodDisc')||0)/100,perfPrem:(num('sPerfPrem')||0)/100};}
 
-function calcMaterial(m,inp,st,pr,job){
+/* B2B adet-kademeli kârlılık: 1 adette %100 marj, adet arttıkça düşer */
+function marginFactor(qty){
+  const b=[1,10,50,100,250,500,1000];
+  const f=[1.00,0.85,0.72,0.62,0.52,0.44,0.36];
+  if(qty>1000)return 0.30;
+  let fac=1.00;for(let i=0;i<b.length;i++){if(qty>=b[i])fac=f[i];}return fac;}
+function unitCostFor(m,inp,st,pr,job,qty){
   const filament=(inp.gram/1000)*m.price;
-  const printerPow=Number(pr&&pr.power_kw)||st.power;
-  const printElec=job.printH*printerPow*st.elec;                 // adet başı baskı elektriği
-  const acElec=st.klima*(job.printH/job.machinesUsed)*st.elec;   // klima: paralel makineye bölünür
+  const printerPow=Number(pr&&pr.power_kw)||st.power||0.2;
+  const printElec=job.printH*printerPow*st.elec;
+  const platesNeeded=Math.ceil(qty/job.perPlate);
+  const machinesUsed=Math.max(1,Math.min(job.nPrinters,platesNeeded));
+  const acElec=st.klima*(job.printH/machinesUsed)*st.elec;         // klima paralel makineye bölünür
   const amort=job.printH*((pr?pr.price:0)/((pr&&pr.life)||6000));
   const laborCost=job.laborH*st.labor;
-  const oneTime=job.designH*st.design+job.scanH*st.labor;        // tek seferlik → adede yay
-  let unit=filament+printElec+acElec+amort+laborCost+(oneTime/inp.qty);
+  const oneTime=job.designH*st.design+job.scanH*st.labor;          // tek seferlik → adede yay
+  let unit=filament+printElec+acElec+amort+laborCost+(oneTime/qty);
   unit=unit*(1+st.fail)+st.overPerPart;
   if(inp.scan)unit+=st.scanPerPart;
-  const disc=Math.min(st.qtyDisc||0,inp.qty*0.002);
-  let sale=unit*(1+st.margin)*(1-disc);                          // "Çok İyi" satış (adet başı)
-  if(inp.custType==='market')sale*=(1+st.market);                // pazaryeri komisyonu
-  if(inp.color)sale*=1.12;                                       // renk purge firesi tüm kademelere
-  const finishing=(st.finMat||0)+((st.finMin||0)/60)*st.labor;   // adet başı rötuş (aseton/zımpara+işçilik)
-  const iyi=sale*(1-(st.goodDisc||0));
-  const cokiyi=sale;
-  const mukemmel=(sale+finishing)*(1+(st.perfPrem||0));
+  return{unit,filament,elec:printElec+acElec,amort,labor:laborCost};}
+function tierPrices(cost,st,inp,qty){
+  let sale=cost*(1+st.margin*marginFactor(qty));                   // KDV hariç net satış
+  if(inp.custType==='market')sale*=(1+st.market);
+  if(inp.color)sale*=1.12;                                         // renk purge firesi
+  const finishing=(st.finMat||0)+((st.finMin||0)/60)*st.labor;
+  return{sale,finishing,iyi:sale*(1-(st.goodDisc||0)),cokiyi:sale,mukemmel:(sale+finishing)*(1+(st.perfPrem||0))};}
+function calcMaterial(m,inp,st,pr,job){
+  const c=unitCostFor(m,inp,st,pr,job,inp.qty);const tp=tierPrices(c.unit,st,inp,inp.qty);
+  const eff=st.margin*marginFactor(inp.qty);
   const tiers={
-    iyi:{price:iyi,total:iyi*inp.qty},
-    cokiyi:{price:cokiyi,total:cokiyi*inp.qty},
-    mukemmel:{price:mukemmel,total:mukemmel*inp.qty}
+    iyi:{price:tp.iyi,total:tp.iyi*inp.qty,profit:(tp.iyi-c.unit)*inp.qty},
+    cokiyi:{price:tp.cokiyi,total:tp.cokiyi*inp.qty,profit:(tp.cokiyi-c.unit)*inp.qty},
+    mukemmel:{price:tp.mukemmel,total:tp.mukemmel*inp.qty,profit:(tp.mukemmel-(c.unit+tp.finishing))*inp.qty}
   };
-  return{cost:unit,price:cokiyi,total:cokiyi*inp.qty,tiers,finishing,filament,elec:printElec+acElec,amort,labor:laborCost,disc};
-}
+  return{cost:c.unit,eff,price:tp.cokiyi,total:tp.cokiyi*inp.qty,tiers,finishing:tp.finishing,
+    filament:c.filament,elec:c.elec,amort:c.amort,labor:c.labor};}
+function buildMatrix(m,inp,st,pr,job){
+  return [1,10,50,100,250,500,1000,1001].map(q=>{
+    const useQ=q===1001?1500:q;const c=unitCostFor(m,inp,st,pr,job,useQ).unit;const tp=tierPrices(c,st,inp,useQ);
+    return{label:q===1001?'1000+':String(q),iyi:tp.iyi,cokiyi:tp.cokiyi,mukemmel:tp.mukemmel};});}
 let lastCalc=null;
 function calc(){
   const st=settings();const sel=document.getElementById('cPrinter');const pr=PRINTERS[parseInt(sel.value,10)];
@@ -1353,7 +1414,7 @@ function calc(){
     laborH:parseHMS(document.getElementById('cLabor').value)/3600,
     designH:parseHMS(document.getElementById('cDesign').value)/3600,
     scanH:parseHMS(document.getElementById('cScanT').value)/3600,
-    perPlate,platesNeeded,machinesUsed};
+    perPlate,platesNeeded,machinesUsed,nPrinters};
   const inp={gram:num('cGram'),qty,x:num('cX'),y:num('cY'),z:num('cZ'),
     color:document.getElementById('cColor').value==='1',
     scan:document.getElementById('cScan').value==='1',
@@ -1361,14 +1422,14 @@ function calc(){
     colors:document.getElementById('cColor').value==='1'?pickedColors():[]};
   let rows=MAT.map(m=>({m,r:calcMaterial(m,inp,st,pr,job)}));
   rows.sort((a,b)=>a.r.tiers.cokiyi.total-b.r.tiers.cokiyi.total);lastCalc={rows,inp,pr,job};
-  // toplam makine-saati / duvar saati (bilgi)
-  const totalMachineH=job.printH*qty;const wallH=totalMachineH/machinesUsed;
+  const wallH=(job.printH*qty)/machinesUsed;
   const custTxt=inp.custType==='market'?'🛒 Pazarlama':'👤 Kendi müşteri';
   const colTxt=inp.color?(inp.colors.length?'· 🎨 '+inp.colors.join('/'):'· 🎨 renkli'):'';
-  document.getElementById('rMeta').innerHTML=`🖨️ ${pr.name} · ⚖️ ${inp.gram} g · ⏱️ ${fmtHMS(job.printH*3600)}/adet · 🔢 ${qty} adet · 🔲 ${perPlate}/tabla · ${platesNeeded} tabla · ${machinesUsed} makine ~${fmtHMS(wallH*3600)} ${colTxt} · ${custTxt}${rows[0].r.disc>0?` · 💸 %${Math.round(rows[0].r.disc*100)} adet ind.`:''}`;
+  document.getElementById('rNote').innerHTML=`Oruvian'da üretim kalıba dayalı değildir; her parça talebinize göre <b>anlık olarak tasarlanıp şekillendirilir</b> — markanıza özel isim, logo ve modele göre baskı yapılabilir. Az adetli üretimlerde tasarım, hazırlık ve işçilik maliyetinin tamamı tek siparişe yansıdığından birim fiyat yüksektir; <b>adet arttıkça bu emek tüm ürünlere yayıldığından birim fiyat kademeli olarak düşer.</b> Fiyatlar <b>KDV hariçtir (+%20 KDV)</b>.`;
+  document.getElementById('rMeta').innerHTML=`🖨️ ${pr.name} · ⚖️ ${inp.gram} g · ⏱️ ${fmtHMS(job.printH*3600)}/adet · 🔢 ${qty} adet · 🔲 ${perPlate}/tabla · ${platesNeeded} tabla · ${machinesUsed} makine ~${fmtHMS(wallH*3600)} ${colTxt} · ${custTxt} · marj %${Math.round(rows[0].r.eff*100)}`;
   const oe=document.getElementById('rOpts');oe.innerHTML="";
   rows.forEach((x,i)=>{const t=x.r.tiers;const d=document.createElement('div');d.className="ropt tierbox"+(i===0?" recommend":"");
-    d.innerHTML=`<div class="ml">${x.m.emoji} ${x.m.name} ${i===0?'<span style="color:var(--ok);font-size:11px">✓ en uygun malzeme</span>':''}</div>
+    d.innerHTML=`<div class="ml">${x.m.emoji} ${x.m.name} ${i===0?'<span style="color:var(--ok);font-size:11px">✓ en uygun malzeme</span>':''} <small style="font-weight:400;color:var(--txt2)">(${qty} adet · +KDV)</small></div>
       <div class="tiers">
         <div class="tier"><span class="tl">İyi</span>
           <div class="tp"><small>Adet</small><b>${fmt(t.iyi.price)} ₺</b></div>
@@ -1380,8 +1441,18 @@ function calc(){
           <div class="tp"><small>Adet</small><b>${fmt(t.mukemmel.price)} ₺</b></div>
           <div class="tp tot"><small>Toplam · ${qty} ad.</small><b>${fmt(t.mukemmel.total)} ₺</b></div></div>
       </div>`;oe.appendChild(d);});
-  const b=rows[0];
-  document.getElementById('rBreak').innerHTML=`<b>Maliyet (${b.m.name}, adet başı):</b> 🧵 ${fmt(b.r.filament)} · ⚡ ${fmt(b.r.elec)} · 🧰 ${fmt(b.r.labor)} · 🖨️ ${fmt(b.r.amort)} ₺ + gider/fire.<br>🎚️ <b>İyi</b> standart bitiş (−%${Math.round((st.goodDisc||0)*100)}) · <b>Çok İyi</b> önerilen (dengeli, en kârlı) · <b>Mükemmel</b> aseton/zımpara el işçiliği +rötuş ${fmt(b.r.finishing)} ₺/adet, +%${Math.round((st.perfPrem||0)*100)} prim.<br>💡 ${suggest(inp)}`;
+  const b=rows[0];const tb=b.r.tiers;
+  document.getElementById('rProfit').innerHTML=`<div class="profitbox"><div class="pbh"><b>💰 Edilen kâr</b><span class="ib">iç bilgi · ${b.m.name} · ${qty} adet</span></div>
+     <div class="prow"><span>İyi</span><b>${fmt(tb.iyi.profit)} ₺</b><small>${fmt(tb.iyi.profit/qty)} ₺/ad</small></div>
+     <div class="prow best"><span>Çok İyi</span><b>${fmt(tb.cokiyi.profit)} ₺</b><small>${fmt(tb.cokiyi.profit/qty)} ₺/ad</small></div>
+     <div class="prow"><span>Mükemmel</span><b>${fmt(tb.mukemmel.profit)} ₺</b><small>${fmt(tb.mukemmel.profit/qty)} ₺/ad</small></div>
+     <small class="pnote">Maliyet ${fmt(b.r.cost)} ₺/ad · efektif marj %${Math.round(b.r.eff*100)} — adet arttıkça B2B kademesiyle düşer.</small></div>`;
+  const mx=buildMatrix(b.m,inp,st,pr,job);
+  document.getElementById('rMatrix').innerHTML=`<div class="matrix"><div class="mxh">📊 Adet kademeli birim fiyat · ${b.m.emoji} ${b.m.name} <small>(adet başı · +KDV)</small></div>
+    <table class="mxt"><thead><tr><th>Adet</th><th>İyi</th><th>Çok İyi ⭐</th><th>Mükemmel</th></tr></thead><tbody>
+    ${mx.map(r=>`<tr><td><b>${r.label}</b></td><td>${fmt(r.iyi)} ₺</td><td class="mc">${fmt(r.cokiyi)} ₺</td><td>${fmt(r.mukemmel)} ₺</td></tr>`).join('')}
+    </tbody></table></div>`;
+  document.getElementById('rBreak').innerHTML=`<b>Maliyet (${b.m.name}, adet başı):</b> 🧵 ${fmt(b.r.filament)} · ⚡ ${fmt(b.r.elec)} · 🧰 ${fmt(b.r.labor)} · 🖨️ ${fmt(b.r.amort)} ₺ + gider/fire.<br>🎚️ <b>İyi</b> standart bitiş (−%${Math.round((st.goodDisc||0)*100)}) · <b>Çok İyi</b> önerilen (en çok satılan, hacim kârı) · <b>Mükemmel</b> el işçiliğiyle premium bitiş (+rötuş ${fmt(b.r.finishing)} ₺/ad, +%${Math.round((st.perfPrem||0)*100)} prim).<br>💡 ${suggest(inp)}`;
   quoteTab('result');
 }
 function suggest(inp){return inp.color?"Renkli baskıda K2 en verimli. Görsel ürün PLA, dayanıklı iş PETG.":"İç mekan dekoratif için PLA en ekonomik; kafe/dış mekan & sık kullanılan parçalar PETG; güneş gören ürünler için ASA.";}
@@ -1389,19 +1460,20 @@ function suggest(inp){return inp.color?"Renkli baskıda K2 en verimli. Görsel �
 /* ====== Teklif sun (mail + WhatsApp) ====== */
 function offerTexts(){
   const q=lastCalc.inp.qty;const b=lastCalc.rows[0];const t=b.r.tiers;
-  const mailMsg=`Merhaba,\n\n${q} adet talebiniz için kalite seçeneklerimiz:\n\n`+
+  const intro=`Üretimlerimiz kalıba bağlı değildir; her parça talebinize göre özel tasarlanır, markanıza özel isim ve logo işlenebilir. Az adette hazırlık ve işçiliğin tamamı tek siparişe yansıdığı için birim fiyat yüksektir; adet arttıkça bu emek ürünlere yayılır ve birim fiyat düşer.`;
+  const mailMsg=`Merhaba,\n\n${intro}\n\n${q} adet talebiniz için kalite seçeneklerimiz:\n\n`+
     `• İyi — ${fmt(t.iyi.total)} ₺ (adet ${fmt(t.iyi.price)} ₺)\n`+
     `   Standart baskı: sağlam ve işlevsel, yüzeyde hafif katman izleri olabilir. Bütçe dostu seçim.\n\n`+
     `• Çok İyi — ${fmt(t.cokiyi.total)} ₺ (adet ${fmt(t.cokiyi.price)} ₺)  ⭐ ÖNERİLEN\n`+
     `   İnce katmanlı, temiz ve düzgün yüzey. Kalite/fiyat dengesi en iyi seçenek.\n\n`+
     `• Mükemmel — ${fmt(t.mukemmel.total)} ₺ (adet ${fmt(t.mukemmel.price)} ₺)\n`+
-    `   Elde işlenmiş premium bitiş: aseton/zımpara ile pürüzsüz yüzey, sergilik kalite.\n\n`+
-    `Fiyatlar KDV dahildir. Sizin için en uygun seçeneği birlikte belirleyebiliriz.\n\nSevgiler,\nOruvian`;
-  const waMsg=`Merhaba 👋 ${q} adet için kalite seçenekleri:\n\n`+
+    `   El işçiliğiyle pürüzsüz, premium bitiş — sergilik kalite.\n\n`+
+    `Fiyatlara KDV dahil değildir (+%20 KDV). Sizin için en uygun seçeneği birlikte belirleyebiliriz.\n\nSevgiler,\nOruvian`;
+  const waMsg=`Merhaba 👋\n${intro}\n\n${q} adet için kalite seçenekleri:\n\n`+
     `🟢 İyi: ${fmt(t.iyi.total)} ₺ — standart, işlevsel bitiş\n`+
     `⭐ Çok İyi: ${fmt(t.cokiyi.total)} ₺ — temiz yüzey, önerilen\n`+
     `💎 Mükemmel: ${fmt(t.mukemmel.total)} ₺ — el işçiliğiyle pürüzsüz premium\n\n`+
-    `Hangisini istersiniz? 🙂 (KDV dahil)\nOruvian`;
+    `Fiyatlara +%20 KDV eklenir. Hangisini istersiniz? 🙂\nOruvian`;
   return{mailMsg,waMsg};
 }
 function openOffer(){if(!lastCalc)return;const{mailMsg,waMsg}=offerTexts();
@@ -1495,7 +1567,7 @@ function quotePdf(){
   const tierRows=[
     {n:'İyi',d:'Standart bitiş — sağlam, işlevsel',v:t.iyi},
     {n:'Çok İyi',d:'İnce katman, temiz yüzey — önerilen',v:t.cokiyi,rec:true},
-    {n:'Mükemmel',d:'Aseton/zımpara el işçiliği, premium bitiş',v:t.mukemmel}
+    {n:'Mükemmel',d:'El işçiliğiyle pürüzsüz, premium bitiş',v:t.mukemmel}
   ];
   const trs=tierRows.map(x=>`<tr${x.rec?' class="rec"':''}><td>${x.n}${x.rec?' <span class="tag">Önerilen</span>':''}<br><span style="font-size:10.5px;color:#888">${x.d}</span></td><td>${inp.qty}</td><td>${fmt(x.v.price)} ₺</td><td><b>${fmt(x.v.total)} ₺</b></td></tr>`).join('');
   const w=window.open('','_blank');
@@ -1519,10 +1591,10 @@ function quotePdf(){
     <div class="top"><div class="logo">ORUVIAN<small>3D BASKI ÇÖZÜMLERİ</small></div>
     <div class="meta"><b>FİYAT TEKLİFİ</b><br>Teklif No: ${no}<br>Tarih: ${today.toLocaleDateString('tr-TR')}<br>Geçerlilik: ${val.toLocaleDateString('tr-TR')}</div></div>
     <h2>Sayın Yetkili,</h2>
-    <p class="info">Talebiniz doğrultusunda hazırladığımız fiyat teklifimiz aşağıdadır. Kalite kademeleri kullanım amacına göre sunulmuştur.</p>
+    <p class="info">Üretimlerimiz kalıba bağlı değildir; her parça talebinize göre özel tasarlanıp şekillendirilir ve markanıza özel isim/logo işlenebilir. Az adetli üretimde tasarım, hazırlık ve işçilik maliyeti tek siparişe yansıdığından birim fiyat yüksektir; adet arttıkça bu emek tüm ürünlere yayıldığı için birim fiyat kademeli olarak düşer. Aşağıdaki kalite kademeleri kullanım amacına göre sunulmuştur.</p>
     <table><tr><th>KALİTE KADEMESİ</th><th>ADET</th><th>BİRİM FİYAT</th><th>TOPLAM</th></tr>
     <tr><td colspan="4" style="font-weight:600;background:#fafafa">${escapeHtml(prodName)} · ${b.m.emoji} ${b.m.name} — ${inp.qty} adet</td></tr>${trs}</table>
-    <div class="terms"><b>Kalite kademeleri</b><br>• <b>İyi:</b> standart baskı, sağlam ve işlevsel; yüzeyde hafif katman izleri olabilir. • <b>Çok İyi:</b> ince katmanlı, temiz ve düzgün yüzey — kalite/fiyat dengesi en iyi seçenek. • <b>Mükemmel:</b> aseton/zımpara ile elde işlenmiş pürüzsüz premium bitiş.<br><br><b>Koşullar</b><br>• Fiyatlara KDV dahildir. • Teslim süresi sipariş onayından itibaren netleştirilir. • Teklif belirtilen tarihe kadar geçerlidir.</div>
+    <div class="terms"><b>Kalite kademeleri</b><br>• <b>İyi:</b> standart baskı, sağlam ve işlevsel; yüzeyde hafif katman izleri olabilir. • <b>Çok İyi:</b> ince katmanlı, temiz ve düzgün yüzey — kalite/fiyat dengesi en iyi seçenek. • <b>Mükemmel:</b> el işçiliğiyle pürüzsüz, premium bitiş.<br><br><b>Koşullar</b><br>• Fiyatlara KDV dahil değildir; belirtilen tutarlara %20 KDV eklenir. • Teslim süresi sipariş onayından itibaren netleştirilir. • Teklif belirtilen tarihe kadar geçerlidir.</div>
     <div class="foot"><span>Oruvian · oruvian.com</span><span>info@oruvian.com</span></div>
     <script>window.onload=()=>setTimeout(()=>window.print(),300)<\/script></body></html>`);
   w.document.close();
@@ -1760,7 +1832,11 @@ async function renderTodos(){
     el.appendChild(row);
   });
 }
-function todoForm(t){t=t||{};return `<div style="display:grid;gap:8px;text-align:left">
+function todoForm(t){t=t||{};
+  const _t=new Date();const today=_t.toISOString().slice(0,10);
+  const wk=new Date(_t.getTime()+7*864e5).toISOString().slice(0,10);
+  const sd=t.start_date||today, ed=t.end_date||wk;
+  return `<div style="display:grid;gap:8px;text-align:left">
    <div><label>Başlık *</label><input id="tdTitle" placeholder="Örn. 200 anahtarlık baskısı" value="${escapeHtml(t.title||t.body||'')}"></div>
    <div><label>Açıklama</label><textarea id="tdDesc" style="min-height:56px" placeholder="Detay...">${escapeHtml(t.descr||'')}</textarea></div>
    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
@@ -1768,9 +1844,9 @@ function todoForm(t){t=t||{};return `<div style="display:grid;gap:8px;text-align
      <div><label>Sorumlu</label><select id="tdAsg">${assigneeOptions(t.assignee)}</select></div>
    </div>
    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-     <div><label>Başlangıç tarihi</label><input id="tdSd" type="date" value="${t.start_date||''}"></div>
+     <div><label>Başlangıç tarihi</label><input id="tdSd" type="date" value="${sd}"></div>
      <div><label>Başlangıç saati</label><input id="tdSt" type="time" value="${t.start_time||''}"></div>
-     <div><label>Bitiş tarihi</label><input id="tdEd" type="date" value="${t.end_date||''}"></div>
+     <div><label>Teslim (bitiş) tarihi</label><input id="tdEd" type="date" value="${ed}"></div>
      <div><label>Bitiş saati</label><input id="tdEt" type="time" value="${t.end_time||''}"></div>
    </div>
    <div><label>Durum</label><select id="tdStat">${TSTATUS.map(s=>`<option value="${s}" ${s===(t.status||'bekliyor')?'selected':''}>${TSTATUS_TR[s]}</option>`).join('')}</select></div>
