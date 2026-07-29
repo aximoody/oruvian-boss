@@ -645,15 +645,17 @@ m193 -380 c-10 -87 -79 -140 -152 -116 -37 12 -46 26 -46 71 0 38 29 66 77 74
 .tier.best .tp b{color:#15803d}
 .tier.best .tp.tot b{color:#15803d;opacity:.75}
 .rnote{font-size:12.5px;line-height:1.6;color:var(--txt);background:rgba(99,102,241,.07);border:1px solid rgba(99,102,241,.18);border-radius:12px;padding:12px 14px;margin-bottom:12px}
-.profitbox{margin-top:14px;border:1px dashed #d1a054;background:rgba(234,179,8,.08);border-radius:14px;padding:12px 14px}
-.profitbox .pbh{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
-.profitbox .ib{font-size:10.5px;color:var(--txt2);text-transform:uppercase;letter-spacing:.03em}
-.profitbox .prow{display:flex;align-items:baseline;gap:8px;padding:4px 0;border-bottom:1px solid rgba(0,0,0,.05)}
-.profitbox .prow span{flex:0 0 78px;font-size:12px;color:var(--txt2);font-weight:600}
-.profitbox .prow b{flex:1;font-size:15px}
-.profitbox .prow small{font-size:11px;color:var(--txt2)}
-.profitbox .prow.best b{color:#b45309}
-.profitbox .pnote{display:block;margin-top:8px;font-size:11px;color:var(--txt2)}
+.fintbl{margin-top:14px;border:1px dashed #d1a054;background:rgba(234,179,8,.07);border-radius:14px;padding:12px 14px}
+.fintbl .finh{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.fintbl .finh b{font-size:14px}
+.fintbl .ib{font-size:10px;color:var(--txt2);letter-spacing:.03em}
+.finscroll{overflow-x:auto}
+.fint{min-width:460px}
+.fint td.fp{font-weight:700}
+.fint td.fk{font-weight:800;color:#15803d}
+.fint tr.best td{background:rgba(22,163,74,.06)}
+.fint tr.best td:first-child b{color:#15803d}
+.fintbl .pnote{display:block;margin-top:9px;font-size:11px;color:var(--txt2);line-height:1.5}
 .matrix{margin-top:14px}
 .matrix .mxh{font-size:13px;font-weight:700;margin-bottom:8px}
 .matrix .mxh small{font-weight:400;color:var(--txt2)}
@@ -1441,12 +1443,19 @@ function calc(){
           <div class="tp"><small>Adet</small><b>${fmt(t.mukemmel.price)} ₺</b></div>
           <div class="tp tot"><small>Toplam · ${qty} ad.</small><b>${fmt(t.mukemmel.total)} ₺</b></div></div>
       </div>`;oe.appendChild(d);});
-  const b=rows[0];const tb=b.r.tiers;
-  document.getElementById('rProfit').innerHTML=`<div class="profitbox"><div class="pbh"><b>💰 Edilen kâr</b><span class="ib">iç bilgi · ${b.m.name} · ${qty} adet</span></div>
-     <div class="prow"><span>İyi</span><b>${fmt(tb.iyi.profit)} ₺</b><small>${fmt(tb.iyi.profit/qty)} ₺/ad</small></div>
-     <div class="prow best"><span>Çok İyi</span><b>${fmt(tb.cokiyi.profit)} ₺</b><small>${fmt(tb.cokiyi.profit/qty)} ₺/ad</small></div>
-     <div class="prow"><span>Mükemmel</span><b>${fmt(tb.mukemmel.profit)} ₺</b><small>${fmt(tb.mukemmel.profit/qty)} ₺/ad</small></div>
-     <small class="pnote">Maliyet ${fmt(b.r.cost)} ₺/ad · efektif marj %${Math.round(b.r.eff*100)} — adet arttıkça B2B kademesiyle düşer.</small></div>`;
+  const b=rows[0];const tb=b.r.tiers;const finU=b.r.finishing;
+  const prow=(name,tier,costU,cls)=>{const p=tb[tier];const tcost=costU*qty;
+    return `<tr class="${cls||''}"><td><b>${name}</b></td><td>${fmt(p.price)} ₺</td><td class="fp">${fmt(p.total)} ₺</td><td>${fmt(tcost)} ₺</td><td class="fk">${fmt(p.profit)} ₺</td></tr>`;};
+  document.getElementById('rProfit').innerHTML=`<div class="fintbl">
+    <div class="finh"><b>💰 Maliyet & kâr tablosu</b><span class="ib">İÇ BİLGİ · ${b.m.name} · ${qty} adet · müşteriye gösterilmez</span></div>
+    <div class="finscroll"><table class="mxt fint">
+      <thead><tr><th>Kademe</th><th>Adet fiyatı</th><th>Toptan toplam</th><th>Toplam maliyet</th><th>Toplam kâr</th></tr></thead>
+      <tbody>
+        ${prow('İyi','iyi',b.r.cost)}
+        ${prow('Çok İyi ⭐','cokiyi',b.r.cost,'best')}
+        ${prow('Mükemmel','mukemmel',b.r.cost+finU)}
+      </tbody></table></div>
+    <small class="pnote">Birim maliyet ${fmt(b.r.cost)} ₺/ad${finU>0?` · Mükemmel'de +${fmt(finU)} ₺ rötuş`:''} · efektif marj %${Math.round(b.r.eff*100)} (adet arttıkça B2B kademesiyle düşer) · fiyatlar +KDV.</small></div>`;
   const mx=buildMatrix(b.m,inp,st,pr,job);
   document.getElementById('rMatrix').innerHTML=`<div class="matrix"><div class="mxh">📊 Adet kademeli birim fiyat · ${b.m.emoji} ${b.m.name} <small>(adet başı · +KDV)</small></div>
     <table class="mxt"><thead><tr><th>Adet</th><th>İyi</th><th>Çok İyi ⭐</th><th>Mükemmel</th></tr></thead><tbody>
