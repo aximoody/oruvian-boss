@@ -154,6 +154,11 @@
   .recommend{outline:2px solid var(--ok);background:rgba(22,163,74,.07)}
   .break{font-size:12px;color:var(--txt2);margin-top:8px;line-height:1.7}
   .msgbox{width:100%;min-height:130px;font-size:13px;line-height:1.6}
+  .stepper{display:flex;gap:6px;align-items:stretch}.stepper input{text-align:center;font-weight:700}
+  .stepper button{min-width:44px;border-radius:10px;border:1px solid var(--line,rgba(0,0,0,.12));background:#fff;font-size:20px;font-weight:700;cursor:pointer}
+  .qchips{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}.qchips button{border:1px solid var(--line,rgba(0,0,0,.12));background:#fff;border-radius:16px;padding:3px 10px;font-size:12px;cursor:pointer}
+  .hm{display:flex;align-items:center;gap:6px}.hm select{flex:1}.hm span{font-size:12px;color:var(--txt2)}
+  .fbad{outline:2px solid #dc2626 !important;outline-offset:1px;background:rgba(220,38,38,.05) !important}
   .qstep{border:1px solid var(--line,rgba(0,0,0,.08));border-radius:14px;padding:12px 14px;margin-bottom:12px;background:rgba(255,255,255,.35)}
   .qstep-h{font-weight:700;font-size:14px;margin-bottom:8px;display:flex;align-items:center;gap:8px;cursor:default}
   .qstep-h span{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:#111;color:#fff;font-size:12px}
@@ -480,7 +485,8 @@ m193 -380 c-10 -87 -79 -140 -152 -116 -37 12 -46 26 -46 71 0 38 29 66 77 74
           <div class="calc-grid">
             <div><label>🏷️ Satış tipi</label><select id="cMode" onchange="toggleMode()"><option value="wholesale">📦 Toptan (İyi/Çok İyi/Mükemmel)</option><option value="retail">🛍️ Perakende (tek fiyat)</option></select></div>
             <div id="cCustWrap" class="hide"><label>🛒 Nerede satılacak?</label><select id="cCustType"><option value="direct">🏪 Dükkan / kendi müşteri</option><option value="hb">🟠 Hepsiburada</option><option value="amz">🟡 Amazon</option></select></div>
-            <div><label>🔢 Müşteri kaç adet istiyor?</label><input id="cQty" type="number" value="1" min="1" oninput="updatePreview()"></div>
+            <div><label>🔢 Müşteri kaç adet istiyor?</label><div class="stepper"><button type="button" onclick="stepNum('cQty',-1)">−</button><input id="cQty" inputmode="numeric" value="1" oninput="cleanInt(this);updatePreview()"><button type="button" onclick="stepNum('cQty',1)">+</button></div>
+              <div class="qchips"><button type="button" onclick="setQty(1)">1</button><button type="button" onclick="setQty(10)">10</button><button type="button" onclick="setQty(50)">50</button><button type="button" onclick="setQty(100)">100</button><button type="button" onclick="setQty(250)">250</button><button type="button" onclick="setQty(500)">500</button><button type="button" onclick="setQty(1000)">1000</button></div></div>
             <div><label>📍 Nerede kullanılacak?</label><select id="cUse"><option value="ic">🏠 İç mekan / dekoratif</option><option value="dayanikli">💪 Dayanıklı, sık kullanılan</option><option value="dis">☀️ Dış mekan / güneş / araba dışı</option><option value="motor">🔥 Motor bölmesi / sıcak yer</option><option value="esnek">🌀 Esnek / lastik gibi</option></select></div>
           </div></div>
 
@@ -488,10 +494,10 @@ m193 -380 c-10 -87 -79 -140 -152 -116 -37 12 -46 26 -46 71 0 38 29 66 77 74
           <p class="qhint">Creality Print → <b>Önizleme</b> ekranını aç. Tablayı nasıl dizdiysen öyle oku.</p>
           <div class="calc-grid">
             <div><label>🖨️ Hangi yazıcı?</label><select id="cPrinter" onchange="recalcPlate()"></select></div>
-            <div><label>🔲 Tablada kaç tane var?</label><input id="sPlN" type="number" value="1" min="1" oninput="updatePreview()"></div>
-            <div><label>⏱️ Yazım Zamanı</label><input id="sPlT" placeholder="örn. 10h2m" oninput="updatePreview()"><small class="fhint">Slicer'da yazdığı gibi: 10h2m, 55m37s</small></div>
-            <div><label>⚖️ Toplam → Model (g)</label><input id="sPlG" type="number" step="0.01" placeholder="örn. 130,18" oninput="updatePreview()"><small class="fhint">En alttaki "Toplam" satırı, Model sütunu</small></div>
-            <div><label>🧽 Toplam → Temizlenmiş (g)</label><input id="sPlP" type="number" step="0.01" value="0" oninput="updatePreview()"><small class="fhint">Tek renkse 0 bırak</small></div>
+            <div><label>🔲 Tablada kaç tane var?</label><div class="stepper"><button type="button" onclick="stepNum('sPlN',-1)">−</button><input id="sPlN" inputmode="numeric" value="1" oninput="cleanInt(this);updatePreview()"><button type="button" onclick="stepNum('sPlN',1)">+</button></div><small class="fhint">Slicer'da tablaya dizdiğin parça sayısı</small></div>
+            <div><label>⏱️ Yazım Zamanı</label><div class="hm"><select id="sPlH" onchange="updatePreview()"></select><span>sa</span><select id="sPlM" onchange="updatePreview()"></select><span>dk</span></div><small class="fhint">Slicer "5h22m" diyorsa → 5 sa 22 dk seç</small><input id="sPlT" type="hidden"></div>
+            <div><label>⚖️ Toplam → <u>Model</u> (g)</label><input id="sPlG" inputmode="decimal" placeholder="örn. 122,81" oninput="cleanDec(this);updatePreview()"><small class="fhint">En alttaki "Toplam" satırı, <b>Model</b> sütunu. Filament Wt'yi yazma!</small></div>
+            <div><label>🧽 Toplam → Temizlenmiş + Kule (g)</label><input id="sPlP" inputmode="decimal" value="0" oninput="cleanDec(this);updatePreview()"><small class="fhint">İkisini topla (Kule yoksa sadece Temizlenmiş). Tek renkse 0.</small></div>
           </div>
           <div id="cPreview" class="qprev">Değerleri girince adet başı hesap burada görünür.</div></div>
 
@@ -501,7 +507,7 @@ m193 -380 c-10 -87 -79 -140 -152 -116 -37 12 -46 26 -46 71 0 38 29 66 77 74
               <option value="tek">⚪ Tek renk — tüm yazıcılar</option>
               <option value="ams">🌈 Çok renk AMS — sadece K2 (yavaş, büyük siparişte uzun sürer)</option>
               <option value="layer">🔁 Katmanda renk değiştir — tüm yazıcılar (QR, isimlik gibi üst üste renkler)</option></select></div>
-            <div id="cSwapWrap" class="hide"><label>🔁 Tabla başına kaç kez filament değişiyor?</label><input id="cSwaps" type="number" value="1" min="1" oninput="updatePreview()"><small class="fhint">Her değişim 5 dk işçilik sayılır</small></div>
+            <div id="cSwapWrap" class="hide"><label>🔁 Tabla başına kaç kez filament değişiyor?</label><div class="stepper"><button type="button" onclick="stepNum('cSwaps',-1)">−</button><input id="cSwaps" inputmode="numeric" value="1" oninput="cleanInt(this);updatePreview()"><button type="button" onclick="stepNum('cSwaps',1)">+</button></div><small class="fhint">Her değişim 5 dk işçilik sayılır</small></div>
           </div>
           <div id="cColorWrap" class="hide" style="margin-top:10px">
             <label>Renkler (kayıt için, fiyatı değiştirmez)</label>
@@ -510,12 +516,12 @@ m193 -380 c-10 -87 -79 -140 -152 -116 -37 12 -46 26 -46 71 0 38 29 66 77 74
 
           <details class="qstep qextra"><summary class="qstep-h"><span>4</span> Ekstralar <small>— gerekmiyorsa dokunma</small></summary>
           <div class="calc-grid" style="margin-top:10px">
-            <div><label>🧰 Tabla başı işçilik (dk)</label><input id="cPlLab" type="number" value="10" oninput="updatePreview()"><small class="fhint">Tablayı alma, temizleme, parçaları ayırma</small></div>
-            <div><label>📦 Adet başı ek işçilik (dk)</label><input id="cUnitLab" type="number" value="0" oninput="updatePreview()"><small class="fhint">Montaj, halka takma, paketleme</small></div>
+            <div><label>🧰 Tabla başı işçilik</label><select id="cPlLab" onchange="updatePreview()"></select><small class="fhint">Tablayı alma, temizleme, parçaları ayırma</small></div>
+            <div><label>📦 Adet başı ek işçilik</label><select id="cUnitLab" onchange="updatePreview()"></select><small class="fhint">Montaj, halka takma, paketleme</small></div>
             <div><label>♻️ Parça tipi (fire)</label><select id="cFire"><option value="tek">Normal parça (%5 fire)</option><option value="seri">Eklemli / flexi / hassas (%15 fire)</option></select></div>
-            <div><label>✏️ Çizim süresi (tek sefer)</label><input id="cDesign" value="00:00:00" placeholder="SS:DD:ss"></div>
+            <div><label>✏️ Çizim süresi (tek sefer)</label><div class="hm"><select id="cDesH"></select><span>sa</span><select id="cDesM"></select><span>dk</span></div><input id="cDesign" type="hidden" value="00:00:00"></div>
             <div><label>🔍 Tarayıcı</label><select id="cScan"><option value="">Kullanılmadı</option></select></div>
-            <div><label>🔍 Tarama süresi (tek sefer)</label><input id="cScanT" value="00:00:00" placeholder="SS:DD:ss"></div>
+            <div><label>🔍 Tarama süresi (tek sefer)</label><div class="hm"><select id="cScnH"></select><span>sa</span><select id="cScnM"></select><span>dk</span></div><input id="cScanT" type="hidden" value="00:00:00"></div>
           </div></details>
 
           <!-- sistemin kendi hesapladığı alanlar (gizli) -->
@@ -1462,7 +1468,20 @@ async function saveSettings(){
 }
 
 /* ====== Teklif hesap ====== */
-function fillPrinters(){const s=document.getElementById('cPrinter');if(!s)return;s.innerHTML="";PRINTERS.forEach((p,i)=>{if(p.kind==='device')return;s.add(new Option(p.name+" ("+STATUS_TR[p.status]+")",i));});
+/* ---- Hataya kapalı giriş yardımcıları ---- */
+function cleanInt(el){const v=el.value.replace(/[^0-9]/g,'');if(v!==el.value)el.value=v;}
+function cleanDec(el){let v=el.value.replace(/[^0-9.,]/g,'').replace('.',',');const i=v.indexOf(',');if(i>=0)v=v.slice(0,i+1)+v.slice(i+1).replace(/,/g,'');if(v!==el.value)el.value=v;}
+function stepNum(id,d){const e=document.getElementById(id);e.value=Math.max(1,(parseInt(e.value,10)||0)+d);updatePreview();}
+function setQty(q){document.getElementById('cQty').value=q;updatePreview();}
+function setSel(id,v){const e=document.getElementById(id);if(!e)return;v=String(v);if(![...e.options].some(o=>o.value===v))e.add(new Option(v,v));e.value=v;}
+let TIMESEL_DONE=false;
+function fillTimeSelects(){if(TIMESEL_DONE)return;const r=(a,b,st)=>{const o=[];for(let i=a;i<=b;i+=st)o.push(i);return o;};
+  const F=(id,arr,lbl,def)=>{const e=document.getElementById(id);if(!e)return;e.innerHTML=arr.map(v=>`<option value="${v}">${lbl?lbl(v):v}</option>`).join('');e.value=String(def);};
+  F('sPlH',r(0,96,1),null,0);F('sPlM',r(0,59,1),null,0);
+  F('cDesH',r(0,40,1),null,0);F('cDesM',r(0,55,5),null,0);F('cScnH',r(0,24,1),null,0);F('cScnM',r(0,55,5),null,0);
+  F('cPlLab',[0,2,5,10,15,20,30,45,60],v=>v+' dk',10);F('cUnitLab',[0,0.5,1,2,3,5,10,15,20,30],v=>v+' dk',0);
+  TIMESEL_DONE=true;}
+function fillPrinters(){fillTimeSelects();const s=document.getElementById('cPrinter');if(!s)return;s.innerHTML="";PRINTERS.forEach((p,i)=>{if(p.kind==='device')return;s.add(new Option(p.name+" ("+STATUS_TR[p.status]+")",i));});
   const sc=document.getElementById('cScan');if(sc){const cur=sc.value;sc.innerHTML='<option value="">Kullanılmadı</option>'+PRINTERS.filter(p=>p.kind==='device').map(p=>`<option value="${p.id}">🔍 ${escapeHtml(p.name)} (${fmt(scanRate(p))} ₺/sa)</option>`).join('');sc.value=cur;}}
 function toggleMode(){const r=document.getElementById('cMode').value==='retail';
   document.getElementById('cCustWrap').classList.toggle('hide',!r);
@@ -1479,7 +1498,7 @@ function quoteTab(t){['hesap','result','ayar','teklifler','musteri','urun'].forE
   if(t==='teklifler')renderQuotes();
   if(t==='musteri')renderCustomers();
   if(t==='urun')renderProducts();}
-function num(id){const e=document.getElementById(id);return e?parseFloat(e.value)||0:0;}
+function num(id){const e=document.getElementById(id);return e?parseFloat(String(e.value).replace(',','.'))||0:0;}
 function parseHMS(v){v=(v==null?'':v).toString().trim();if(!v)return 0;
   if(v.indexOf(':')<0){const f=parseFloat(v);return isNaN(f)?0:f*3600;} // ":" yoksa saat kabul et
   const p=v.split(':').map(x=>parseInt(x,10)||0);while(p.length<3)p.unshift(0);
@@ -1505,7 +1524,8 @@ function renderColorPick(){const el=document.getElementById('cColorPick');
   el.innerHTML=COLORS.map(c=>`<label class="cchip"><input type="checkbox" value="${c}">${c}</label>`).join('');}
 /* Slicer süresi: "10h2m", "55m37s", "1d2h", "10:02:00" → saniye */
 function parseSlicerTime(v){v=(v||'').toString().trim().toLowerCase().replace(/\s+/g,'');if(!v)return 0;
-  if(v.includes(':'))return parseHMS(v);
+  if(v.includes(':')){const p=v.split(':').map(x=>parseInt(x,10)||0);   // slicer bağlamı: 5:22 = 5 sa 22 dk
+    return p.length===2?p[0]*3600+p[1]*60:parseHMS(v);}
   let sec=0,hit=false;const re=/(\d+(?:[.,]\d+)?)(dk|sn|sa|d|g|h|m|s)/g;let m;
   const U={d:86400,g:86400,h:3600,sa:3600,m:60,dk:60,sn:1,s:1};
   while((m=re.exec(v))){hit=true;sec+=parseFloat(m[1].replace(',','.'))*U[m[2]];}
@@ -1518,7 +1538,10 @@ function toggleColorMode(){const m=document.getElementById('cColorMode').value;
   if(m!=='tek'&&!document.querySelector('#cColorPick input'))renderColorPick();updatePreview();}
 /* Slicer tabla değerlerinden adet başı değerleri üret (gizli alanlara yazar) */
 function syncFromPlate(){
-  const n=Math.max(1,Math.round(num('sPlN'))||1);const t=parseSlicerTime(document.getElementById('sPlT').value);
+  const n=Math.max(1,Math.round(num('sPlN'))||1);const t=num('sPlH')*3600+num('sPlM')*60;
+  document.getElementById('sPlT').value=fmtHMS(t);
+  document.getElementById('cDesign').value=fmtHMS(num('cDesH')*3600+num('cDesM')*60);
+  document.getElementById('cScanT').value=fmtHMS(num('cScnH')*3600+num('cScnM')*60);
   const gPl=num('sPlG'),pPl=num('sPlP');const mode=document.getElementById('cColorMode').value;
   const swaps=mode==='layer'?Math.max(1,num('cSwaps')):0;
   const labMin=(num('cPlLab')+swaps*5)/n+num('cUnitLab');
@@ -1526,12 +1549,31 @@ function syncFromPlate(){
   S('cPerPlate',n);S('cGram',(gPl/n).toFixed(3));S('cPrint',fmtHMS(t/n));S('cPurge',mode==='ams'?(pPl/n).toFixed(3):0);
   S('cColor',mode==='ams'?'1':'0');S('cLabor',fmtHMS(labMin*60));
   return{n,t,gPl,pPl,mode,labMin,ok:gPl>0&&t>0};}
-function updatePreview(){const el=document.getElementById('cPreview');if(!el)return;const r=syncFromPlate();
-  if(!r.ok){el.className='qprev';el.innerHTML='Yazım Zamanı ve Model gramını girince adet başı hesap burada görünür.';return;}
+function validateQuote(){const r=syncFromPlate();const E=[],W=[];const q=num('cQty');
+  if(!(q>=1))E.push(['cQty','Adet en az 1 olmalı']);
+  if(q>100000)E.push(['cQty','Adet çok büyük — kontrol et']);
+  if(r.n>300)E.push(['sPlN',"Tablada 300'den fazla parça olamaz — kontrol et"]);
+  if(!r.t)E.push(['sPlH','Yazım Zamanı seçilmedi']);
+  if(!(r.gPl>0))E.push(['sPlG','Model gramı girilmedi']);
+  if(r.gPl>0&&r.gPl/r.n<0.3)E.push(['sPlG','Adet başı '+(r.gPl/r.n).toFixed(2)+' g — çok az, tablada adet ya da gram yanlış']);
+  if(r.gPl/r.n>3000)E.push(['sPlG','Adet başı 3 kg üstü — gram yanlış görünüyor']);
+  if(r.gPl>0&&r.pPl>=r.gPl)E.push(['sPlP',"Temizlenmiş, Model'den büyük olamaz — sütunları karıştırmış olabilirsin"]);
+  if(r.t&&r.t/r.n<60)E.push(['sPlH','Adet başı 1 dakikadan kısa — süre ya da tabla adedi yanlış']);
+  if(r.t/r.n>48*3600)W.push(['sPlH','Adet başı 48 saatten uzun — emin misin?']);
+  if(r.mode==='tek'&&r.pPl>0)W.push(['cColorMode','Temizlenmiş '+r.pPl+' g var ama "Tek renk" seçili — renkliyse 3. adımda seç']);
+  if(r.mode==='ams'&&!r.pPl)W.push(['sPlP',"AMS seçili ama Temizlenmiş 0 — slicer'dan bak"]);
+  if(r.gPl>0&&r.pPl>r.gPl*0.4)W.push(['sPlP',"Fire Model'in %40'ından fazla — doğru mu?"]);
+  document.querySelectorAll('.fbad').forEach(x=>x.classList.remove('fbad'));
+  E.forEach(([id])=>{const e=document.getElementById(id);if(e)e.classList.add('fbad');});
+  return{r,E,W};}
+function updatePreview(){const el=document.getElementById('cPreview');if(!el)return;
+  const {r,E,W}=validateQuote();
+  if(!r.t&&!r.gPl){el.className='qprev';el.innerHTML='Yazım Zamanı ve Model gramını girince adet başı hesap burada görünür.';return;}
+  if(E.length){el.className='qprev err';el.innerHTML='⛔ <b>Düzelt:</b><br>'+E.map(x=>'• '+x[1]).join('<br>');return;}
   const q=Math.max(1,num('cQty'));const plates=Math.ceil(q/r.n);
   el.className='qprev';
   el.innerHTML=`✅ <b>Adet başı:</b> ⚖️ ${(r.gPl/r.n).toFixed(2)} g · ⏱️ ${fmtNice(r.t/r.n)}${r.mode==='ams'&&r.pPl?` · 🧽 ${(r.pPl/r.n).toFixed(2)} g purge`:''} · 🧰 ${r.labMin.toFixed(1)} dk işçilik<br>📦 ${q} adet = <b>${plates} tabla</b> · toplam ~${fmtNice(plates*r.t)} makine süresi${r.mode==='ams'?' · <b>sadece K2</b>':''}`
-    +(r.mode==='tek'&&r.pPl>0?`<br>⚠️ Temizlenmiş ${r.pPl} g görünüyor ama "Tek renk" seçili — renkliyse 3. adımda seç.`:'');}
+    +W.map(x=>'<br>⚠️ '+x[1]).join('');}
 function pickedColors(){return [...document.querySelectorAll('#cColorPick input:checked')].map(x=>x.value);}
 
 function settings(){const months=Math.max(1,num('sAmortMonths')||36);
@@ -1613,12 +1655,12 @@ function pickRow(){return lastCalc?lastCalc.rows[lastCalc.pick||0]:null;}
 function pickMat(i){if(!lastCalc)return;lastCalc.pick=i;
   const x=lastCalc.rows[i];if(x.bad)toast("⛔ "+x.m.name+" bu kullanım yerine uygun değil — yine de seçildi");
   renderResult();}
-const FORM_IDS=['cMode','cQty','sPlN','sPlT','sPlG','sPlP','cColorMode','cSwaps','cPlLab','cUnitLab','cDesign','cScan','cScanT','cCustType','cUse','cFire','cProd'];
+const FORM_IDS=['cMode','cQty','sPlN','sPlH','sPlM','sPlG','sPlP','cColorMode','cSwaps','cPlLab','cUnitLab','cDesH','cDesM','cScan','cScnH','cScnM','cCustType','cUse','cFire','cProd'];
 function readForm(){const f={};FORM_IDS.forEach(id=>{const e=document.getElementById(id);if(e)f[id]=e.value;});
   const pr=PRINTERS[parseInt(document.getElementById('cPrinter').value,10)];f.printerId=pr?pr.id:null;f.colors=pickedColors();return f;}
 function calc(){
-  const sp=syncFromPlate();
-  if(!sp.ok){popup('warn','!','Eksik bilgi',"2. adımda slicer'dan <b>Yazım Zamanı</b> ve <b>Model gramı</b>nı yaz.");return;}
+  const vq=validateQuote();updatePreview();
+  if(vq.E.length){popup('warn','!','Önce düzelt',vq.E.map(x=>'• '+x[1]).join('<br>'));const f=document.getElementById(vq.E[0][0]);if(f&&f.scrollIntoView)f.scrollIntoView({behavior:'smooth',block:'center'});return;}
   const st=settings();const sel=document.getElementById('cPrinter');const pr=PRINTERS[parseInt(sel.value,10)];
   if(!pr){toast("⚠️ Yazıcı seç");return;}
   const qty=Math.max(1,num('cQty'));
@@ -1778,8 +1820,9 @@ function applyProduct(){
   const id=document.getElementById('cProd').value;if(!id)return;
   const p=PRODCACHE.find(x=>String(x.id)===id);if(!p)return;
   const S=(id,v)=>document.getElementById(id).value=v;
-  S('sPlN',1);S('sPlG',p.gram);S('sPlT',fmtHMS((Number(p.print_hours)||0)*3600));S('sPlP',0);
-  S('cPlLab',0);S('cUnitLab',p.labor!=null?Math.round((Number(p.labor)||0)*60):0);S('cDesign',"00:00:00");
+  const ph=Number(p.print_hours)||0;fillTimeSelects();
+  S('sPlN',1);S('sPlG',String(p.gram).replace('.',','));S('sPlP',0);setSel('sPlH',Math.floor(ph));setSel('sPlM',Math.round((ph%1)*60));
+  setSel('cPlLab',0);setSel('cUnitLab',p.labor!=null?Math.round((Number(p.labor)||0)*60):0);setSel('cDesH',0);setSel('cDesM',0);
   S('cColorMode','tek');toggleColorMode();
   toast("📦 "+p.name+" yüklendi — adet gir, hesapla");
 }
@@ -1979,7 +2022,7 @@ async function doCompleteQuote(id){const q=QCACHE.find(x=>x.id===id);if(!q)retur
   closeModal();renderQuotes();toast("🏁 Tamamlandı");}
 function reopenQuote(id){const q=QCACHE.find(x=>x.id===id);if(!q||!q.data||!q.data.form)return;const f=q.data.form;
   quoteTab('hesap');
-  setTimeout(()=>{FORM_IDS.forEach(k=>{const e=document.getElementById(k);if(e&&f[k]!=null)e.value=f[k];});
+  setTimeout(()=>{fillTimeSelects();FORM_IDS.forEach(k=>{const e=document.getElementById(k);if(e&&f[k]!=null){if(e.tagName==='SELECT')setSel(k,f[k]);else e.value=f[k];}});
     const pi=PRINTERS.findIndex(p=>p.id===f.printerId);if(pi>=0)document.getElementById('cPrinter').value=String(pi);
     toggleMode();toggleColorMode();
     if(f.colors)document.querySelectorAll('#cColorPick input').forEach(x=>x.checked=f.colors.includes(x.value));
