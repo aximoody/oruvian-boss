@@ -154,6 +154,14 @@
   .recommend{outline:2px solid var(--ok);background:rgba(22,163,74,.07)}
   .break{font-size:12px;color:var(--txt2);margin-top:8px;line-height:1.7}
   .msgbox{width:100%;min-height:130px;font-size:13px;line-height:1.6}
+  .qstep{border:1px solid var(--line,rgba(0,0,0,.08));border-radius:14px;padding:12px 14px;margin-bottom:12px;background:rgba(255,255,255,.35)}
+  .qstep-h{font-weight:700;font-size:14px;margin-bottom:8px;display:flex;align-items:center;gap:8px;cursor:default}
+  .qstep-h span{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:#111;color:#fff;font-size:12px}
+  .qstep-h small{font-weight:400;color:var(--txt2);font-size:11.5px}
+  details.qextra summary{cursor:pointer;list-style:none;margin-bottom:0}details.qextra summary::-webkit-details-marker{display:none}
+  .qhint{font-size:12px;color:var(--txt2);margin:0 0 8px}.fhint{display:block;font-size:10.5px;color:var(--txt2);margin-top:3px}
+  .qprev{margin-top:10px;font-size:12.5px;padding:9px 12px;border-radius:10px;background:rgba(22,163,74,.08);color:var(--txt1,#222)}
+  .qprev.err{background:rgba(220,38,38,.08)}
   .statpill{font-size:11px;padding:3px 9px;border-radius:8px;font-weight:700}
   .statpill.bek{background:rgba(217,119,6,.15);color:#b45309}.statpill.ipt{background:rgba(220,38,38,.13);color:#991b1b}.statpill.tam{background:rgba(22,163,74,.15);color:#15803d}.statpill.kab{background:rgba(37,99,235,.14);color:#1d4ed8}
   .ropt.picked{outline:2px solid var(--ok);outline-offset:2px}.ropt.badmat{opacity:.55}.ropt{cursor:pointer}
@@ -468,32 +476,53 @@ m193 -380 c-10 -87 -79 -140 -152 -116 -37 12 -46 26 -46 71 0 38 29 66 77 74
       <div id="q-hesap">
         <div class="glass card" style="margin-top:14px">
           <div style="margin-bottom:10px"><label>📦 Kayıtlı ürün (seçince alanlar dolar)</label><select id="cProd" onchange="applyProduct()"><option value="">— Elle gir —</option></select></div>
-          <p style="font-size:11px;color:var(--txt2);margin:0 0 8px">Süreler <b>tek adet</b> bazında, <b>SS:DD:ss</b> formatında girilir. Baskı & işçilik ürün başına; tarama & çizim tek seferlik (adede yayılır).</p>
+          <div class="qstep"><div class="qstep-h"><span>1</span> Ne satıyoruz, kaç adet?</div>
           <div class="calc-grid">
-            <div><label>🏷️ Satış tipi</label><select id="cMode" onchange="toggleMode()"><option value="wholesale">📦 Toptan (İyi/Çok İyi/Mükemmel)</option><option value="retail">🛍️ Perakende (tek fiyat, +KDV)</option></select></div>
-            <div><label>🖨️ Yazıcı</label><select id="cPrinter" onchange="recalcPlate()"></select></div>
-            <div><label>🔢 Üretim adedi</label><input id="cQty" type="number" value="40" oninput="recalcPlate()"></div>
-            <div><label>⚖️ Filament / adet (g)</label><input id="cGram" type="number" value="120"></div>
-            <div><label>⏱️ Baskı süresi / adet</label><input id="cPrint" value="04:00:00" placeholder="SS:DD:ss"></div>
-            <div><label>📐 Ölçü X (mm)</label><input id="cX" type="number" value="40" oninput="recalcPlate()"></div>
-            <div><label>📐 Ölçü Y (mm)</label><input id="cY" type="number" value="40" oninput="recalcPlate()"></div>
-            <div><label>📐 Ölçü Z (mm)</label><input id="cZ" type="number" value="20" oninput="recalcPlate()"></div>
-            <div><label>🔲 Tablaya sığan adet <small id="cPlateAuto" style="color:var(--txt2)"></small></label><input id="cPerPlate" type="number" value="1"></div>
-            <div><label>🧰 İşçilik / adet</label><input id="cLabor" value="00:24:00" placeholder="SS:DD:ss"></div>
+            <div><label>🏷️ Satış tipi</label><select id="cMode" onchange="toggleMode()"><option value="wholesale">📦 Toptan (İyi/Çok İyi/Mükemmel)</option><option value="retail">🛍️ Perakende (tek fiyat)</option></select></div>
+            <div id="cCustWrap" class="hide"><label>🛒 Nerede satılacak?</label><select id="cCustType"><option value="direct">🏪 Dükkan / kendi müşteri</option><option value="hb">🟠 Hepsiburada</option><option value="amz">🟡 Amazon</option></select></div>
+            <div><label>🔢 Müşteri kaç adet istiyor?</label><input id="cQty" type="number" value="1" min="1" oninput="updatePreview()"></div>
+            <div><label>📍 Nerede kullanılacak?</label><select id="cUse"><option value="ic">🏠 İç mekan / dekoratif</option><option value="dayanikli">💪 Dayanıklı, sık kullanılan</option><option value="dis">☀️ Dış mekan / güneş / araba dışı</option><option value="motor">🔥 Motor bölmesi / sıcak yer</option><option value="esnek">🌀 Esnek / lastik gibi</option></select></div>
+          </div></div>
+
+          <div class="qstep"><div class="qstep-h"><span>2</span> Slicer'daki değerleri aynen yaz <small>— bölme yapma, sistem hesaplar</small></div>
+          <p class="qhint">Creality Print → <b>Önizleme</b> ekranını aç. Tablayı nasıl dizdiysen öyle oku.</p>
+          <div class="calc-grid">
+            <div><label>🖨️ Hangi yazıcı?</label><select id="cPrinter" onchange="recalcPlate()"></select></div>
+            <div><label>🔲 Tablada kaç tane var?</label><input id="sPlN" type="number" value="1" min="1" oninput="updatePreview()"></div>
+            <div><label>⏱️ Yazım Zamanı</label><input id="sPlT" placeholder="örn. 10h2m" oninput="updatePreview()"><small class="fhint">Slicer'da yazdığı gibi: 10h2m, 55m37s</small></div>
+            <div><label>⚖️ Toplam → Model (g)</label><input id="sPlG" type="number" step="0.01" placeholder="örn. 130,18" oninput="updatePreview()"><small class="fhint">En alttaki "Toplam" satırı, Model sütunu</small></div>
+            <div><label>🧽 Toplam → Temizlenmiş (g)</label><input id="sPlP" type="number" step="0.01" value="0" oninput="updatePreview()"><small class="fhint">Tek renkse 0 bırak</small></div>
+          </div>
+          <div id="cPreview" class="qprev">Değerleri girince adet başı hesap burada görünür.</div></div>
+
+          <div class="qstep"><div class="qstep-h"><span>3</span> Renk</div>
+          <div class="calc-grid">
+            <div style="grid-column:1/-1"><label>🎨 Nasıl basılacak?</label><select id="cColorMode" onchange="toggleColorMode()">
+              <option value="tek">⚪ Tek renk — tüm yazıcılar</option>
+              <option value="ams">🌈 Çok renk AMS — sadece K2 (yavaş, büyük siparişte uzun sürer)</option>
+              <option value="layer">🔁 Katmanda renk değiştir — tüm yazıcılar (QR, isimlik gibi üst üste renkler)</option></select></div>
+            <div id="cSwapWrap" class="hide"><label>🔁 Tabla başına kaç kez filament değişiyor?</label><input id="cSwaps" type="number" value="1" min="1" oninput="updatePreview()"><small class="fhint">Her değişim 5 dk işçilik sayılır</small></div>
+          </div>
+          <div id="cColorWrap" class="hide" style="margin-top:10px">
+            <label>Renkler (kayıt için, fiyatı değiştirmez)</label>
+            <div id="cColorPick" class="colorpick"></div>
+          </div></div>
+
+          <details class="qstep qextra"><summary class="qstep-h"><span>4</span> Ekstralar <small>— gerekmiyorsa dokunma</small></summary>
+          <div class="calc-grid" style="margin-top:10px">
+            <div><label>🧰 Tabla başı işçilik (dk)</label><input id="cPlLab" type="number" value="10" oninput="updatePreview()"><small class="fhint">Tablayı alma, temizleme, parçaları ayırma</small></div>
+            <div><label>📦 Adet başı ek işçilik (dk)</label><input id="cUnitLab" type="number" value="0" oninput="updatePreview()"><small class="fhint">Montaj, halka takma, paketleme</small></div>
+            <div><label>♻️ Parça tipi (fire)</label><select id="cFire"><option value="tek">Normal parça (%5 fire)</option><option value="seri">Eklemli / flexi / hassas (%15 fire)</option></select></div>
             <div><label>✏️ Çizim süresi (tek sefer)</label><input id="cDesign" value="00:00:00" placeholder="SS:DD:ss"></div>
             <div><label>🔍 Tarayıcı</label><select id="cScan"><option value="">Kullanılmadı</option></select></div>
             <div><label>🔍 Tarama süresi (tek sefer)</label><input id="cScanT" value="00:00:00" placeholder="SS:DD:ss"></div>
-            <div id="cCustWrap" class="hide"><label>🛒 Satış kanalı</label><select id="cCustType"><option value="direct">🏪 Dükkan / kendi müşteri</option><option value="hb">🟠 Hepsiburada</option><option value="amz">🟡 Amazon</option></select></div>
-            <div><label>🎨 Renkli baskı (K2)</label><select id="cColor" onchange="toggleColorPick()"><option value="0">Hayır</option><option value="1">Evet</option></select></div>
-            <div><label>📍 Kullanım yeri (malzeme önerisi)</label><select id="cUse"><option value="ic">🏠 İç mekan / dekoratif</option><option value="dayanikli">💪 Dayanıklı genel kullanım</option><option value="dis">☀️ Dış mekan / güneş / oto dış trim</option><option value="motor">🔥 Motor bölmesi / yüksek ısı</option><option value="esnek">🌀 Esnek parça</option></select></div>
-            <div><label>♻️ Fire</label><select id="cFire"><option value="auto">Otomatik (10+ adet → seri)</option><option value="tek">Tekli iş</option><option value="seri">Seri / eklemli iş</option></select></div>
-          </div>
-          <div id="cColorWrap" class="hide" style="margin-top:10px">
-            <label>🎨 Renk(ler) — birden fazla seçebilirsin</label>
-            <div id="cColorPick" class="colorpick"></div>
-            <div style="max-width:260px;margin-top:8px"><label>🧽 Purge firesi / adet (g) — slicer'dan bak</label><input id="cPurge" type="number" value="0" min="0"></div>
-          </div>
-          <button class="btn" style="margin-top:16px" onclick="calc()">Fiyatı hesapla →</button>
+          </div></details>
+
+          <!-- sistemin kendi hesapladığı alanlar (gizli) -->
+          <div class="hide"><input id="cGram"><input id="cPrint"><input id="cPerPlate"><input id="cLabor"><input id="cPurge">
+            <select id="cColor"><option value="0">0</option><option value="1">1</option></select>
+            <input id="cX" value="0"><input id="cY" value="0"><input id="cZ" value="0"><small id="cPlateAuto"></small></div>
+          <button class="btn" style="margin-top:16px" onclick="calc()">💰 Fiyatı hesapla →</button>
         </div>
       </div>
 
@@ -1474,6 +1503,35 @@ function toggleColorPick(){const on=document.getElementById('cColor').value==='1
   document.getElementById('cColorWrap').classList.toggle('hide',!on);if(on)renderColorPick();}
 function renderColorPick(){const el=document.getElementById('cColorPick');
   el.innerHTML=COLORS.map(c=>`<label class="cchip"><input type="checkbox" value="${c}">${c}</label>`).join('');}
+/* Slicer süresi: "10h2m", "55m37s", "1d2h", "10:02:00" → saniye */
+function parseSlicerTime(v){v=(v||'').toString().trim().toLowerCase().replace(/\s+/g,'');if(!v)return 0;
+  if(v.includes(':'))return parseHMS(v);
+  let sec=0,hit=false;const re=/(\d+(?:[.,]\d+)?)(dk|sn|sa|d|g|h|m|s)/g;let m;
+  const U={d:86400,g:86400,h:3600,sa:3600,m:60,dk:60,sn:1,s:1};
+  while((m=re.exec(v))){hit=true;sec+=parseFloat(m[1].replace(',','.'))*U[m[2]];}
+  if(!hit){const f=parseFloat(v.replace(',','.'));return isNaN(f)?0:f*60;}   // sadece sayı → dakika
+  return sec;}
+function fmtNice(sec){sec=Math.round(sec);const h=Math.floor(sec/3600),m=Math.floor(sec%3600/60),s=sec%60;return (h?h+' sa ':'')+(m?m+' dk ':'')+(!h&&s?s+' sn':'')||'0 dk';}
+function toggleColorMode(){const m=document.getElementById('cColorMode').value;
+  document.getElementById('cColorWrap').classList.toggle('hide',m==='tek');
+  document.getElementById('cSwapWrap').classList.toggle('hide',m!=='layer');
+  if(m!=='tek'&&!document.querySelector('#cColorPick input'))renderColorPick();updatePreview();}
+/* Slicer tabla değerlerinden adet başı değerleri üret (gizli alanlara yazar) */
+function syncFromPlate(){
+  const n=Math.max(1,Math.round(num('sPlN'))||1);const t=parseSlicerTime(document.getElementById('sPlT').value);
+  const gPl=num('sPlG'),pPl=num('sPlP');const mode=document.getElementById('cColorMode').value;
+  const swaps=mode==='layer'?Math.max(1,num('cSwaps')):0;
+  const labMin=(num('cPlLab')+swaps*5)/n+num('cUnitLab');
+  const S=(id,v)=>document.getElementById(id).value=v;
+  S('cPerPlate',n);S('cGram',(gPl/n).toFixed(3));S('cPrint',fmtHMS(t/n));S('cPurge',mode==='ams'?(pPl/n).toFixed(3):0);
+  S('cColor',mode==='ams'?'1':'0');S('cLabor',fmtHMS(labMin*60));
+  return{n,t,gPl,pPl,mode,labMin,ok:gPl>0&&t>0};}
+function updatePreview(){const el=document.getElementById('cPreview');if(!el)return;const r=syncFromPlate();
+  if(!r.ok){el.className='qprev';el.innerHTML='Yazım Zamanı ve Model gramını girince adet başı hesap burada görünür.';return;}
+  const q=Math.max(1,num('cQty'));const plates=Math.ceil(q/r.n);
+  el.className='qprev';
+  el.innerHTML=`✅ <b>Adet başı:</b> ⚖️ ${(r.gPl/r.n).toFixed(2)} g · ⏱️ ${fmtNice(r.t/r.n)}${r.mode==='ams'&&r.pPl?` · 🧽 ${(r.pPl/r.n).toFixed(2)} g purge`:''} · 🧰 ${r.labMin.toFixed(1)} dk işçilik<br>📦 ${q} adet = <b>${plates} tabla</b> · toplam ~${fmtNice(plates*r.t)} makine süresi${r.mode==='ams'?' · <b>sadece K2</b>':''}`
+    +(r.mode==='tek'&&r.pPl>0?`<br>⚠️ Temizlenmiş ${r.pPl} g görünüyor ama "Tek renk" seçili — renkliyse 3. adımda seç.`:'');}
 function pickedColors(){return [...document.querySelectorAll('#cColorPick input:checked')].map(x=>x.value);}
 
 function settings(){const months=Math.max(1,num('sAmortMonths')||36);
@@ -1555,16 +1613,20 @@ function pickRow(){return lastCalc?lastCalc.rows[lastCalc.pick||0]:null;}
 function pickMat(i){if(!lastCalc)return;lastCalc.pick=i;
   const x=lastCalc.rows[i];if(x.bad)toast("⛔ "+x.m.name+" bu kullanım yerine uygun değil — yine de seçildi");
   renderResult();}
-const FORM_IDS=['cMode','cQty','cGram','cPrint','cX','cY','cZ','cPerPlate','cLabor','cDesign','cScan','cScanT','cCustType','cColor','cUse','cFire','cPurge','cProd'];
+const FORM_IDS=['cMode','cQty','sPlN','sPlT','sPlG','sPlP','cColorMode','cSwaps','cPlLab','cUnitLab','cDesign','cScan','cScanT','cCustType','cUse','cFire','cProd'];
 function readForm(){const f={};FORM_IDS.forEach(id=>{const e=document.getElementById(id);if(e)f[id]=e.value;});
   const pr=PRINTERS[parseInt(document.getElementById('cPrinter').value,10)];f.printerId=pr?pr.id:null;f.colors=pickedColors();return f;}
 function calc(){
+  const sp=syncFromPlate();
+  if(!sp.ok){popup('warn','!','Eksik bilgi',"2. adımda slicer'dan <b>Yazım Zamanı</b> ve <b>Model gramı</b>nı yaz.");return;}
   const st=settings();const sel=document.getElementById('cPrinter');const pr=PRINTERS[parseInt(sel.value,10)];
   if(!pr){toast("⚠️ Yazıcı seç");return;}
   const qty=Math.max(1,num('cQty'));
   const perPlate=Math.max(1,Math.round(num('cPerPlate'))||1);
   const platesNeeded=Math.ceil(qty/perPlate);
-  const nPrinters=st.nPr;
+  const colorJob=document.getElementById('cColor').value==='1';   // sadece AMS modunda 1
+  const nColorPr=PRINTERS.filter(p=>p.kind!=='device'&&p.color).length;
+  const nPrinters=colorJob?Math.max(1,nColorPr):st.nPr;            // renkli iş sadece renkli (AMS) yazıcılarda
   const machinesUsed=Math.max(1,Math.min(nPrinters,platesNeeded));
   const fsel=document.getElementById('cFire').value;
   const seri=fsel==='seri'||(fsel==='auto'&&qty>=10);
@@ -1580,7 +1642,8 @@ function calc(){
     mode,use:document.getElementById('cUse').value,
     scanner:PRINTERS.find(p=>String(p.id)===document.getElementById('cScan').value)||null,
     custType:mode==='retail'?document.getElementById('cCustType').value:'direct',
-    colors:document.getElementById('cColor').value==='1'?pickedColors():[]};
+    colorMode:document.getElementById('cColorMode').value,
+    colors:document.getElementById('cColorMode').value!=='tek'?pickedColors():[]};
   inp.scan=!!inp.scanner;
   if(inp.scanner&&!job.scanH)toast("⚠️ Tarayıcı seçili ama tarama süresi 0 — amortisman eklenmedi");
   if(inp.color&&!inp.purge)toast("⚠️ Renkli baskı: purge gramı 0 — slicer'dan bakıp gir");
@@ -1601,8 +1664,8 @@ function renderResult(){
   const ch=st.ch[inp.custType];
   const custTxt=isR?'🛍️ Perakende · '+(ch?ch.name:'Dükkan'):'📦 Toptan';
   const scanTxt=inp.scanner?' · 🔍 '+escapeHtml(inp.scanner.name):'';
-  const colTxt=inp.color?(inp.colors.length?'· 🎨 '+inp.colors.join('/'):'· 🎨 renkli')+(inp.purge?` (+${inp.purge} g purge)`:''):'';
-  document.getElementById('rMeta').innerHTML=`🖨️ ${pr.name} · ⚖️ ${inp.gram} g · ⏱️ ${fmtHMS(job.printH*3600)}/adet · 🔢 ${qty} adet · 🔲 ${job.perPlate}/tabla · ${job.platesNeeded} tabla · ${job.machinesUsed} makine ~${fmtHMS(wallH*3600)} · 📅 ~${days} iş günü ${colTxt}${scanTxt} · ${custTxt} · 📍 ${use.label} · ♻️ fire %${Math.round(job.fail*100)}${job.seri?' (seri)':''} · marj %${Math.round(b.r.eff*100)}`
+  const colTxt=inp.colorMode==='layer'?'· 🔁 katmanda renk değişimi'+(inp.colors.length?' ('+inp.colors.join('/')+')':''):inp.color?(inp.colors.length?'· 🎨 AMS '+inp.colors.join('/'):'· 🎨 AMS')+(inp.purge?` (+${(+inp.purge).toFixed(2)} g purge)`:''):'';
+  document.getElementById('rMeta').innerHTML=`🖨️ ${pr.name} · ⚖️ ${(+inp.gram).toFixed(2)} g · ⏱️ ${fmtHMS(job.printH*3600)}/adet · 🔢 ${qty} adet · 🔲 ${job.perPlate}/tabla · ${job.platesNeeded} tabla · ${job.machinesUsed} makine${inp.color?' (renkli → sadece AMS)':''} ~${fmtHMS(wallH*3600)} · 📅 ~${days} iş günü ${colTxt}${scanTxt} · ${custTxt} · 📍 ${use.label} · ♻️ fire %${Math.round(job.fail*100)}${job.seri?' (seri)':''} · marj %${Math.round(b.r.eff*100)}`
     +(recMissing?`<br><span style="color:var(--bad)">⚠️ ${use.label} için önerilen malzeme (${(MAT.find(m=>m.key===use.rec)||{}).name||use.rec.toUpperCase()}) fiyatı girilmemiş — Ayarlar → Malzeme maliyetleri.</span>`:'')
     +(noPrice.length?`<br><small>Fiyatı olmayan, hesaba katılmayan: ${noPrice.join(', ')}</small>`:'');
   const badge=(x,i)=>(x.rec?'<span style="color:var(--ok);font-size:11px">✓ önerilen</span> ':'')+(x.bad?'<span style="color:var(--bad);font-size:11px">⛔ bu kullanıma uygun değil</span> ':'')+(i===(lastCalc.pick||0)?'<span style="font-size:11px;color:var(--ok)">📌 teklifte bu</span>':'<span style="font-size:11px;color:var(--txt2)">(teklife almak için tıkla)</span>');
@@ -1714,11 +1777,10 @@ async function loadProdSelect(){
 function applyProduct(){
   const id=document.getElementById('cProd').value;if(!id)return;
   const p=PRODCACHE.find(x=>String(x.id)===id);if(!p)return;
-  document.getElementById('cGram').value=p.gram;
-  document.getElementById('cPrint').value=fmtHMS((Number(p.print_hours)||0)*3600);
-  if(p.labor!=null)document.getElementById('cLabor').value=fmtHMS((Number(p.labor)||0)*3600);
-  document.getElementById('cDesign').value="00:00:00";
-  recalcPlate();
+  const S=(id,v)=>document.getElementById(id).value=v;
+  S('sPlN',1);S('sPlG',p.gram);S('sPlT',fmtHMS((Number(p.print_hours)||0)*3600));S('sPlP',0);
+  S('cPlLab',0);S('cUnitLab',p.labor!=null?Math.round((Number(p.labor)||0)*60):0);S('cDesign',"00:00:00");
+  S('cColorMode','tek');toggleColorMode();
   toast("📦 "+p.name+" yüklendi — adet gir, hesapla");
 }
 async function renderProducts(){
@@ -1919,7 +1981,7 @@ function reopenQuote(id){const q=QCACHE.find(x=>x.id===id);if(!q||!q.data||!q.da
   quoteTab('hesap');
   setTimeout(()=>{FORM_IDS.forEach(k=>{const e=document.getElementById(k);if(e&&f[k]!=null)e.value=f[k];});
     const pi=PRINTERS.findIndex(p=>p.id===f.printerId);if(pi>=0)document.getElementById('cPrinter').value=String(pi);
-    toggleMode();toggleColorPick();
+    toggleMode();toggleColorMode();
     if(f.colors)document.querySelectorAll('#cColorPick input').forEach(x=>x.checked=f.colors.includes(x.value));
     toast("↩️ Teklif yüklendi — güncel ayarlarla hesaplanıyor");calc();},250);}
 
