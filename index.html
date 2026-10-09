@@ -497,7 +497,6 @@ m193 -380 c-10 -87 -79 -140 -152 -116 -37 12 -46 26 -46 71 0 38 29 66 77 74
             <div><label>🔲 Tablada kaç tane var?</label><div class="stepper"><button type="button" onclick="stepNum('sPlN',-1)">−</button><input id="sPlN" inputmode="numeric" value="1" oninput="cleanInt(this);updatePreview()"><button type="button" onclick="stepNum('sPlN',1)">+</button></div><small class="fhint">Slicer'da tablaya dizdiğin parça sayısı</small></div>
             <div><label>⏱️ Yazım Zamanı</label><div class="hm"><select id="sPlH" onchange="updatePreview()"></select><span>sa</span><select id="sPlM" onchange="updatePreview()"></select><span>dk</span></div><small class="fhint">Slicer "5h22m" diyorsa → 5 sa 22 dk seç</small><input id="sPlT" type="hidden"></div>
             <div><label>⚖️ Toplam → <u>Model</u> (g)</label><input id="sPlG" inputmode="decimal" placeholder="örn. 122,81" oninput="cleanDec(this);updatePreview()"><small class="fhint">En alttaki "Toplam" satırı, <b>Model</b> sütunu. Filament Wt'yi yazma!</small></div>
-            <div><label>🧽 Toplam → Temizlenmiş + Kule (g)</label><input id="sPlP" inputmode="decimal" value="0" oninput="cleanDec(this);updatePreview()"><small class="fhint">İkisini topla (Kule yoksa sadece Temizlenmiş). Tek renkse 0.</small></div>
           </div>
           <div id="cPreview" class="qprev">Değerleri girince adet başı hesap burada görünür.</div></div>
 
@@ -508,6 +507,15 @@ m193 -380 c-10 -87 -79 -140 -152 -116 -37 12 -46 26 -46 71 0 38 29 66 77 74
               <option value="ams">🌈 Çok renk AMS — sadece K2 (yavaş, büyük siparişte uzun sürer)</option>
               <option value="layer">🔁 Katmanda renk değiştir — tüm yazıcılar (QR, isimlik gibi üst üste renkler)</option></select></div>
             <div id="cSwapWrap" class="hide"><label>🔁 Tabla başına kaç kez filament değişiyor?</label><div class="stepper"><button type="button" onclick="stepNum('cSwaps',-1)">−</button><input id="cSwaps" inputmode="numeric" value="1" oninput="cleanInt(this);updatePreview()"><button type="button" onclick="stepNum('cSwaps',1)">+</button></div><small class="fhint">Her değişim 5 dk işçilik sayılır</small></div>
+          </div>
+          <div id="cPurgeWrap" class="hide" style="margin-top:10px">
+            <label style="font-weight:700">🧽 Atık — slicer'da en alttaki <u>Toplam</u> satırından</label>
+            <div class="calc-grid">
+              <div><label>Temizlenmiş (g)</label><input id="sPlP1" inputmode="decimal" placeholder="örn. 1,68" oninput="cleanDec(this);updatePreview()"></div>
+              <div><label>Kule (g) — sütun yoksa boş bırak</label><input id="sPlP2" inputmode="decimal" placeholder="örn. 0,58" oninput="cleanDec(this);updatePreview()"></div>
+            </div>
+            <small class="fhint">Toplamayı sistem yapar. Atık sadece AMS'de hesaba girer; katmanda değişimde atık yok sayılır.</small>
+            <input id="sPlP" type="hidden" value="0">
           </div>
           <div id="cColorWrap" class="hide" style="margin-top:10px">
             <label>Renkler (kayıt için, fiyatı değiştirmez)</label>
@@ -1535,6 +1543,7 @@ function fmtNice(sec){sec=Math.round(sec);const h=Math.floor(sec/3600),m=Math.fl
 function toggleColorMode(){const m=document.getElementById('cColorMode').value;
   document.getElementById('cColorWrap').classList.toggle('hide',m==='tek');
   document.getElementById('cSwapWrap').classList.toggle('hide',m!=='layer');
+  document.getElementById('cPurgeWrap').classList.toggle('hide',m!=='ams');
   if(m!=='tek'&&!document.querySelector('#cColorPick input'))renderColorPick();updatePreview();}
 /* Slicer tabla değerlerinden adet başı değerleri üret (gizli alanlara yazar) */
 function syncFromPlate(){
@@ -1542,13 +1551,15 @@ function syncFromPlate(){
   document.getElementById('sPlT').value=fmtHMS(t);
   document.getElementById('cDesign').value=fmtHMS(num('cDesH')*3600+num('cDesM')*60);
   document.getElementById('cScanT').value=fmtHMS(num('cScnH')*3600+num('cScnM')*60);
-  const gPl=num('sPlG'),pPl=num('sPlP');const mode=document.getElementById('cColorMode').value;
+  const mode=document.getElementById('cColorMode').value;
+  const p1=num('sPlP1'),p2=num('sPlP2');const pPl=mode==='ams'?p1+p2:0;document.getElementById('sPlP').value=pPl;
+  const gPl=num('sPlG');
   const swaps=mode==='layer'?Math.max(1,num('cSwaps')):0;
   const labMin=(num('cPlLab')+swaps*5)/n+num('cUnitLab');
   const S=(id,v)=>document.getElementById(id).value=v;
   S('cPerPlate',n);S('cGram',(gPl/n).toFixed(3));S('cPrint',fmtHMS(t/n));S('cPurge',mode==='ams'?(pPl/n).toFixed(3):0);
   S('cColor',mode==='ams'?'1':'0');S('cLabor',fmtHMS(labMin*60));
-  return{n,t,gPl,pPl,mode,labMin,ok:gPl>0&&t>0};}
+  return{n,t,gPl,pPl,p1,p2,mode,labMin,ok:gPl>0&&t>0};}
 function validateQuote(){const r=syncFromPlate();const E=[],W=[];const q=num('cQty');
   if(!(q>=1))E.push(['cQty','Adet en az 1 olmalı']);
   if(q>100000)E.push(['cQty','Adet çok büyük — kontrol et']);
@@ -1557,12 +1568,18 @@ function validateQuote(){const r=syncFromPlate();const E=[],W=[];const q=num('cQ
   if(!(r.gPl>0))E.push(['sPlG','Model gramı girilmedi']);
   if(r.gPl>0&&r.gPl/r.n<0.3)E.push(['sPlG','Adet başı '+(r.gPl/r.n).toFixed(2)+' g — çok az, tablada adet ya da gram yanlış']);
   if(r.gPl/r.n>3000)E.push(['sPlG','Adet başı 3 kg üstü — gram yanlış görünüyor']);
-  if(r.gPl>0&&r.pPl>=r.gPl)E.push(['sPlP',"Temizlenmiş, Model'den büyük olamaz — sütunları karıştırmış olabilirsin"]);
+  if(r.mode==='ams'){
+    if(!(r.p1>0))E.push(['sPlP1',"AMS seçili — Temizlenmiş gramını yaz (Toplam satırı, Temizlenmiş sütunu)"]);
+    if(r.gPl>0&&r.pPl>=r.gPl)E.push(['sPlP1',"Atık, Model'den büyük olamaz — Toplam/Filament Wt sütununu yazmış olabilirsin"]);
+    else if(r.gPl>0&&r.pPl>r.gPl*0.4)W.push(['sPlP1',"Atık Model'in %40'ından fazla — doğru mu? Tablayı daha çok parçayla doldurursan atık adet başına düşer"]);
+    if(r.p2>0&&r.p1>0&&r.p2>r.p1*5)W.push(['sPlP2','Kule, Temizlenmiş\'in 5 katından fazla — sütunlar karışmış olabilir']);}
   if(r.t&&r.t/r.n<60)E.push(['sPlH','Adet başı 1 dakikadan kısa — süre ya da tabla adedi yanlış']);
+  const gph=r.t?r.gPl/(r.t/3600):0;   // tabla geneli gram/saat — FDM'de gerçekçi aralık ~8-120 g/sa
+  if(r.gPl>0&&r.t&&gph<4)E.push(['sPlG','Gram süreye göre çok düşük ('+gph.toFixed(1)+' g/saat). Model\'e tablanın TOPLAM gramını yazdın mı? (adet başı değil)']);
+  else if(r.gPl>0&&r.t&&gph<8)W.push(['sPlG','Gram süreye göre düşük ('+gph.toFixed(1)+' g/saat) — tablanın toplamını yazdığından emin ol']);
+  if(r.gPl>0&&r.t&&gph>150)E.push(['sPlG','Gram süreye göre çok yüksek ('+gph.toFixed(0)+' g/saat) — gram ya da süre yanlış']);
   if(r.t/r.n>48*3600)W.push(['sPlH','Adet başı 48 saatten uzun — emin misin?']);
-  if(r.mode==='tek'&&r.pPl>0)W.push(['cColorMode','Temizlenmiş '+r.pPl+' g var ama "Tek renk" seçili — renkliyse 3. adımda seç']);
-  if(r.mode==='ams'&&!r.pPl)W.push(['sPlP',"AMS seçili ama Temizlenmiş 0 — slicer'dan bak"]);
-  if(r.gPl>0&&r.pPl>r.gPl*0.4)W.push(['sPlP',"Fire Model'in %40'ından fazla — doğru mu?"]);
+
   document.querySelectorAll('.fbad').forEach(x=>x.classList.remove('fbad'));
   E.forEach(([id])=>{const e=document.getElementById(id);if(e)e.classList.add('fbad');});
   return{r,E,W};}
@@ -1655,7 +1672,7 @@ function pickRow(){return lastCalc?lastCalc.rows[lastCalc.pick||0]:null;}
 function pickMat(i){if(!lastCalc)return;lastCalc.pick=i;
   const x=lastCalc.rows[i];if(x.bad)toast("⛔ "+x.m.name+" bu kullanım yerine uygun değil — yine de seçildi");
   renderResult();}
-const FORM_IDS=['cMode','cQty','sPlN','sPlH','sPlM','sPlG','sPlP','cColorMode','cSwaps','cPlLab','cUnitLab','cDesH','cDesM','cScan','cScnH','cScnM','cCustType','cUse','cFire','cProd'];
+const FORM_IDS=['cMode','cQty','sPlN','sPlH','sPlM','sPlG','sPlP1','sPlP2','cColorMode','cSwaps','cPlLab','cUnitLab','cDesH','cDesM','cScan','cScnH','cScnM','cCustType','cUse','cFire','cProd'];
 function readForm(){const f={};FORM_IDS.forEach(id=>{const e=document.getElementById(id);if(e)f[id]=e.value;});
   const pr=PRINTERS[parseInt(document.getElementById('cPrinter').value,10)];f.printerId=pr?pr.id:null;f.colors=pickedColors();return f;}
 function calc(){
@@ -1821,7 +1838,7 @@ function applyProduct(){
   const p=PRODCACHE.find(x=>String(x.id)===id);if(!p)return;
   const S=(id,v)=>document.getElementById(id).value=v;
   const ph=Number(p.print_hours)||0;fillTimeSelects();
-  S('sPlN',1);S('sPlG',String(p.gram).replace('.',','));S('sPlP',0);setSel('sPlH',Math.floor(ph));setSel('sPlM',Math.round((ph%1)*60));
+  S('sPlN',1);S('sPlG',String(p.gram).replace('.',','));S('sPlP1','');S('sPlP2','');setSel('sPlH',Math.floor(ph));setSel('sPlM',Math.round((ph%1)*60));
   setSel('cPlLab',0);setSel('cUnitLab',p.labor!=null?Math.round((Number(p.labor)||0)*60):0);setSel('cDesH',0);setSel('cDesM',0);
   S('cColorMode','tek');toggleColorMode();
   toast("📦 "+p.name+" yüklendi — adet gir, hesapla");
