@@ -756,6 +756,20 @@ m193 -380 c-10 -87 -79 -140 -152 -116 -37 12 -46 26 -46 71 0 38 29 66 77 74
 .todo .tx{flex:1 1 auto;min-width:0;font-size:13px;word-break:break-word}
 .todo .tacts{flex:0 0 auto;display:flex;gap:6px;align-items:flex-start}
 .todo .due{font-size:11px;color:var(--txt2);margin-top:3px}
+.todo{position:relative}
+.todo.urgent:not(.done){box-shadow:inset 4px 0 0 #dc2626;padding-left:10px}
+.todo .ddate{display:inline-flex;align-items:center;gap:5px;margin-top:6px;font-size:13.5px;font-weight:700;color:var(--txt);background:rgba(20,20,25,.06);padding:4px 10px;border-radius:8px}
+.todo .dleft{flex:0 0 auto;min-width:74px;text-align:center;border-radius:12px;padding:6px 8px;line-height:1.05;align-self:center}
+.todo .dleft b{display:block;font-size:26px;font-weight:800}
+.todo .dleft span{display:block;font-size:10.5px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;margin-top:2px}
+.dleft.d-late{background:#dc2626;color:#fff}
+.dleft.d-today{background:#ea580c;color:#fff}
+.dleft.d-soon{background:rgba(234,88,12,.15);color:#c2410c}
+.dleft.d-week{background:rgba(202,138,4,.16);color:#a16207}
+.dleft.d-far{background:rgba(22,163,74,.13);color:#15803d}
+.dleft.d-done{background:rgba(20,20,25,.06);color:var(--txt2)}
+.todo.urgent .ddate{color:#dc2626;background:rgba(220,38,38,.10)}
+@media(max-width:520px){.todo .dleft{min-width:60px;padding:5px 6px}.todo .dleft b{font-size:21px}.todo .ddate{font-size:12.5px}}
 .todo.urgent .due{color:#dc2626;font-weight:700}
 .todo.done .tx{text-decoration:line-through;color:var(--txt2)}
 .todo .tbtn{font-size:11px;padding:4px 8px;border-radius:8px;border:1px solid var(--line);background:transparent;cursor:pointer}
@@ -2201,17 +2215,30 @@ async function renderTodos(){
   if(!list.length){el.innerHTML=head+`<small style='font-size:12px;color:var(--txt2)'>${todoShowArchive?'Arşiv boş.':'İş yok. ✨'}</small>`;return;}
   el.innerHTML=head;
   list.forEach(t=>{
-    const done=todoDone(t);let urgent=false,dueTxt="";
-    if(t.end_date){const d=new Date(t.end_date+'T'+(t.end_time||'23:59'));const diff=Math.ceil((d-today0)/86400000);
-      dueTxt="🗓️ "+new Date(t.end_date).toLocaleDateString('tr-TR')+(t.end_time?' '+t.end_time:'')+(diff<0?" (gecikti)":diff===0?" (bugün)":` (${diff}g)`);
+    const done=todoDone(t);let urgent=false,dateHtml="",leftHtml="";
+    if(t.end_date){
+      const [yy,mm,dd]=t.end_date.split('-').map(Number);const dDay=new Date(yy,mm-1,dd);
+      const diff=Math.round((dDay-today0)/86400000);
+      const dueFull=new Date(t.end_date+'T'+(t.end_time||'23:59'));
+      const late=diff<0||(diff===0&&t.end_time&&dueFull<now);
+      const wd=dDay.toLocaleDateString('tr-TR',{weekday:'short'});
+      dateHtml=`<div class="ddate">🗓️ ${dDay.toLocaleDateString('tr-TR',{day:'numeric',month:'long'})} ${wd}${t.end_time?' · ⏰ '+t.end_time:''}</div>`;
+      let cls,num,lbl;
+      if(done){cls='d-done';num='✓';lbl='bitti';}
+      else if(late){cls='d-late';num=diff<0?Math.abs(diff):'!';lbl=diff<0?'gün gecikti':'saat geçti';}
+      else if(diff===0){cls='d-today';num='BUGÜN';lbl=t.end_time?t.end_time:'son gün';}
+      else{cls=diff<=2?'d-soon':diff<=7?'d-week':'d-far';num=diff;lbl='gün kaldı';}
+      leftHtml=`<div class="dleft ${cls}"><b${num==='BUGÜN'?' style="font-size:17px"':''}>${num}</b><span>${lbl}</span></div>`;
       urgent=!done&&diff<=2;}
     const pr=t.priority||'orta';
-    const meta=[t.assignee?'👤 '+escapeHtml(t.assignee):'',dueTxt,'· '+escapeHtml(TSTATUS_TR[t.status]||(done?'✅ Tamamlandı':'⏳ Bekliyor'))].filter(Boolean).join(' ');
+    const meta=[t.assignee?'👤 '+escapeHtml(t.assignee):'','· '+escapeHtml(TSTATUS_TR[t.status]||(done?'✅ Tamamlandı':'⏳ Bekliyor'))].filter(Boolean).join(' ');
     const row=document.createElement('div');row.className="todo"+(done?" done":"")+(urgent?" urgent":"");
     row.innerHTML=`<input type="checkbox" ${done?'checked':''} onchange="toggleTodo(${t.id},this.checked)">
       <div class="tx"><span class="td-badge pr-${pr}">${pr.toUpperCase()}</span>${escapeHtml(t.title||t.body||'-')}
         ${t.descr?`<div style="font-size:11.5px;color:var(--txt2);margin-top:2px">${escapeHtml(t.descr)}</div>`:''}
+        ${dateHtml}
         <div class="due">${meta} · ${escapeHtml(t.created_by||'')}</div></div>
+      ${leftHtml}
       <div class="tacts">
         <button class="tbtn" onclick="editTodo(${t.id})">✏️</button>
         ${done?`<button class="tbtn" onclick="archiveTodo(${t.id},${t.archived?'false':'true'})">${t.archived?'↩️':'🗄️'}</button>`:''}
