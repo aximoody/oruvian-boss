@@ -415,6 +415,7 @@ m193 -380 c-10 -87 -79 -140 -152 -116 -37 12 -46 26 -46 71 0 38 29 66 77 74
           <button id="kt-in" onclick="kasaView('in')">⬇️ Gelir</button>
           <button id="kt-out" onclick="kasaView('out')">⬆️ Gider</button>
           <button id="kt-tr" onclick="kasaView('tr')">🔁 Transfer</button>
+          <input id="kSearch" type="search" placeholder="🔍 Ara: açıklama, kategori, kişi, hesap, tutar" oninput="clearTimeout(window._kst);window._kst=setTimeout(renderKasa,250)" style="margin-left:auto;max-width:340px;flex:1;min-width:160px">
         </div>
         <div class="seg" style="margin-bottom:10px">
           <button id="kp-day" class="on" onclick="kasaPeriod('day')">Günlük</button>
@@ -432,6 +433,7 @@ m193 -380 c-10 -87 -79 -140 -152 -116 -37 12 -46 26 -46 71 0 38 29 66 77 74
           <div id="kPayBox" style="grid-column:1/-1"></div>
         </div>
         <button class="btn sm" style="margin-bottom:12px" onclick="addKasa()">💾 Kaydet</button>
+        <div id="kSrchInfo" class="hide" style="font-size:12px;color:var(--txt2);margin:0 4px 6px"></div>
         <div class="glass card" style="padding:4px"><div id="kasaList"></div></div>
         <p style="font-size:11px;color:var(--txt2);margin-top:8px">Kayıtlar tamamen silinmez — "Pasif" olarak işaretlenir, geçmişte görünür.</p>
       </div>
@@ -1291,8 +1293,15 @@ async function renderKasa(){
   const eDate=e=>e.kind==='k'?kDateOf(e.rows[0]):new Date(e.t.tdate+'T00:00:00');
   const eTs=e=>String(e.kind==='k'?e.rows[0].created_at:e.t.created_at);
   ents.sort((a,b)=>(eDate(b)-eDate(a))||(eTs(b)>eTs(a)?1:eTs(b)<eTs(a)?-1:0));
+  const qw=norm(document.getElementById('kSearch')?.value||'').split(/\s+/).filter(Boolean);
+  const hay=e=>norm(e.kind==='t'?[e.t.descr,e.t.created_by,hesOf(e.t.from_hesap).n,hesOf(e.t.to_hesap).n,'transfer',e.t.amount].join(' ')
+    :e.rows.map(x=>[x.descr,x.category,x.created_by,hesOf(x.hesap||'nakit').n,x.amount]).flat().join(' ')+' '+e.rows.reduce((s,x)=>s+Number(x.amount),0));
+  let sN=0,sIn=0,sOut=0,sTr=0;
   ents.forEach(e=>{
-    if(eDate(e).getTime()<start)return;
+    if(qw.length){if(!qw.every(w=>hay(e).includes(w)))return;}
+    else if(eDate(e).getTime()<start)return;
+    if(qw.length&&(kFilter==='all'||(e.kind==='t'?kFilter==='tr':e.rows[0].type===kFilter))){sN++;
+      if(e.kind==='t')sTr+=Number(e.t.amount);else e.rows.forEach(x=>{if(x.passive)return;if(x.type==='in')sIn+=Number(x.amount);else sOut+=Number(x.amount);});}
     const dt=eDate(e).toLocaleDateString('tr-TR');
     const r=document.createElement('div');
     if(e.kind==='t'){if(kFilter!=='all'&&kFilter!=='tr')return;const t=e.t;const f=hesOf(t.from_hesap),to=hesOf(t.to_hesap);
@@ -1318,7 +1327,9 @@ async function renderKasa(){
       <button class="mini" onclick="${multi?`askDeleteKasaG('${ids}','${lbl}')`:`askDelete('kasa',${k.id},'${lbl}','renderKasa')`}">🗑️</button>`;
     el.appendChild(r);
   });
-  if(!el.children.length)el.innerHTML="<div style='padding:12px;font-size:12px;color:var(--txt2)'>Kayıt yok.</div>";
+  if(!el.children.length)el.innerHTML="<div style='padding:12px;font-size:12px;color:var(--txt2)'>"+(qw.length?"Aramaya uyan kayıt yok.":"Kayıt yok.")+"</div>";
+  const si=document.getElementById('kSrchInfo');si.classList.toggle('hide',!qw.length);
+  if(qw.length)si.innerHTML=`🔍 Tüm zamanlarda aranıyor · <b>${sN}</b> kayıt · <span style="color:var(--ok)">+${fmt(sIn)} ₺</span> · <span style="color:var(--bad)">−${fmt(sOut)} ₺</span>${sTr?` · 🔁 ${fmt(sTr)} ₺`:''} · net <b>${fmt(sIn-sOut)} ₺</b>`;
   const hk=Object.keys(bal).filter(k=>HESAPLAR.some(h=>h.k===k)||Math.abs(bal[k])>0.001);
   document.getElementById('kHesap').innerHTML=hk.map(k=>{const h=hesOf(k),v=bal[k];
     return `<div class="glass stat"><small>${h.i} ${escapeHtml(h.n).toLocaleUpperCase('tr-TR')}</small><div class="n" style="color:${v<0?'var(--bad)':'inherit'}">${v<0?'−':''}${fmt(Math.abs(v))} ₺</div></div>`;}).join('')
